@@ -4,7 +4,7 @@ spring:
 
 server:
   address: ${SERVER_ADDRESS:0.0.0.0}
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT:8082}
 
 eureka:
   client:

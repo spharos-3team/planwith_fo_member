@@ -1,22 +1,24 @@
 # Gateway route snippet for planwith-fo-member
-# Does NOT patch the Gateway repo automatically. Copy-paste the route item below.
+# Does NOT patch the Gateway repo automatically. Copy-paste into:
+#   planwith_gateway/src/main/resources/application.yaml
 #
-# Target: planwith_gateway/src/main/resources/application.yaml
-# Under:  spring.cloud.gateway.server.webmvc.routes
+# Under: spring.cloud.gateway.server.webflux.routes
+# And add the springdoc.swagger-ui.urls entry at the bottom.
 #
-# Example:
-# spring:
-#   cloud:
-#     gateway:
-#       server:
-#         webmvc:
-#           routes:
-#             # paste the item below here
-#
-# Eureka service id is usually UPPERCASE (lb://PLANWITH-FO-MEMBER).
+# Eureka lookup: lb://planwith-fo-member (matches spring.application.name).
 # Keep Path aligned with the service @RequestMapping. Default: /api/planwith-fo-member/**
 
             - id: planwith-fo-member
-              uri: lb://PLANWITH-FO-MEMBER
+              uri: lb://planwith-fo-member
               predicates:
                 - Path=/api/planwith-fo-member/**
+            - id: planwith-fo-member-docs
+              uri: lb://planwith-fo-member
+              predicates:
+                - Path=/docs/planwith-fo-member,/docs/planwith-fo-member/**
+              filters:
+                - RewritePath=/docs/planwith-fo-member(?<segment>/?.*), /v3/api-docs${segment}
+
+# Also add under springdoc.swagger-ui.urls:
+#      - name: planwith-fo-member
+#        url: /docs/planwith-fo-member
