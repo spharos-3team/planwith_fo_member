@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: planwith-fo-member
+
+server:
+  address: ${SERVER_ADDRESS:0.0.0.0}
+  port: ${SERVER_PORT:8081}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: ${EUREKA_PREFER_IP_ADDRESS:true}
+
+app:
+  auth:
+    id: ${LOGIN_ID:test-001}
+    pw: ${LOGIN_PASSWORD:1234}
+  deploy:
+    marker: ${DEPLOY_MARKER:planwith-fo-member-deploy-v1}

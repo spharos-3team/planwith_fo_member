@@ -1,0 +1,18 @@
+  planwith-fo-member:
+    image: planwith/planwith-fo-member:latest
+    pull_policy: never
+    container_name: planwith-planwith-fo-member
+    restart: unless-stopped
+    depends_on:
+      discovery:
+        condition: service_started
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+      SERVER_ADDRESS: 0.0.0.0
+      EUREKA_DEFAULT_ZONE: http://discovery:8761/eureka/
+      EUREKA_PREFER_IP_ADDRESS: "false"
+      SPRING_APPLICATION_NAME: planwith-fo-member
+    networks:
+      - planwith-net
