@@ -10,11 +10,11 @@ import io.swagger.v3.oas.models.info.Info;
 public class OpenApiConfig {
 
 	@Bean
-	public OpenAPI planwith_fo_memberOpenAPI() {
+	public OpenAPI planwithFoMemberOpenAPI() {
 		return new OpenAPI()
 				.info(new Info()
 						.title("PlanWith planwith-fo-member API")
-						.description("Server notebook deploy verification service")
+						.description("Member signup, email verification, terms")
 						.version("v1"));
 	}
 }

@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:member_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+
+eureka:
+  client:
+    enabled: false
+
+app:
+  email-verification:
+    code-ttl-seconds: 600
+    verified-ttl-seconds: 1800
+    code-length: 6
