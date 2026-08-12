@@ -10,10 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties = "eureka.client.enabled=false")
+@SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class DeployControllerIntegrationTests {
 
 	@Autowired
@@ -39,8 +41,9 @@ class DeployControllerIntegrationTests {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value("test-001"))
-				.andExpect(jsonPath("$.message").value("로그인에 성공했습니다."));
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.id").value("test-001"))
+				.andExpect(jsonPath("$.data.message").value("로그인에 성공했습니다."));
 	}
 
 	@Test
@@ -54,7 +57,8 @@ class DeployControllerIntegrationTests {
 								}
 								"""))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value("INVALID_CREDENTIALS"));
 	}
 
 	@Test
@@ -68,7 +72,7 @@ class DeployControllerIntegrationTests {
 								}
 								"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-				.andExpect(jsonPath("$.message").value("아이디는 필수입니다."));
+				.andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.error.fieldErrors.id").value("아이디는 필수입니다."));
 	}
 }

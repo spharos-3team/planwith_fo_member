@@ -1,6 +1,21 @@
 spring:
   application:
     name: planwith-fo-member
+  datasource:
+    # Local default: infra MySQL on host port 3307. Docker overrides via env/member.env.
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3307/member_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:member_user}
+    password: ${DB_PASSWORD:member_pass}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  jackson:
+    time-zone: UTC
 
 server:
   address: ${SERVER_ADDRESS:0.0.0.0}
@@ -8,10 +23,21 @@ server:
 
 eureka:
   client:
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
     service-url:
       defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: ${EUREKA_PREFER_IP_ADDRESS:true}
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info
 
 app:
   auth:
@@ -19,3 +45,7 @@ app:
     pw: ${LOGIN_PASSWORD:1234}
   deploy:
     marker: ${DEPLOY_MARKER:planwith-fo-member-deploy-v1}
+  email-verification:
+    code-ttl-seconds: ${EMAIL_VERIFICATION_CODE_TTL_SECONDS:600}
+    verified-ttl-seconds: ${EMAIL_VERIFICATION_VERIFIED_TTL_SECONDS:1800}
+    code-length: ${EMAIL_VERIFICATION_CODE_LENGTH:6}

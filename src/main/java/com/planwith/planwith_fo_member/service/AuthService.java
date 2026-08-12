@@ -5,10 +5,11 @@ import java.security.MessageDigest;
 
 import org.springframework.stereotype.Service;
 
+import com.planwith.planwith_fo_member.application.exception.BusinessException;
+import com.planwith.planwith_fo_member.application.exception.ErrorCode;
 import com.planwith.planwith_fo_member.config.AuthProperties;
 import com.planwith.planwith_fo_member.dto.LoginRequest;
 import com.planwith.planwith_fo_member.dto.LoginResponse;
-import com.planwith.planwith_fo_member.exception.InvalidCredentialsException;
 
 @Service
 public class AuthService {
@@ -21,9 +22,8 @@ public class AuthService {
 
 	public LoginResponse login(LoginRequest request) {
 		if (!isValidCredentials(request)) {
-			throw new InvalidCredentialsException();
+			throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
 		}
-
 		return new LoginResponse(request.id(), "로그인에 성공했습니다.");
 	}
 
