@@ -17,4 +17,6 @@ public interface MemberJpaRepository extends JpaRepository<MemberJpaEntity, Long
 	Optional<MemberJpaEntity> findByEmailIgnoreCase(String email);
 
 	Optional<MemberJpaEntity> findByLoginTypeAndSocialId(LoginType loginType, String socialId);
+
+	Optional<MemberJpaEntity> findFirstByPhoneNumber(String phoneNumber);
 }

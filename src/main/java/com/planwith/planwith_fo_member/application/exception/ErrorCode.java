@@ -26,6 +26,7 @@ public enum ErrorCode {
 	SOCIAL_AUTH_FAILED(HttpStatus.BAD_REQUEST, "SOCIAL_AUTH_FAILED", "소셜 인증에 실패했습니다."),
 	SOCIAL_ACCOUNT_ALREADY_EXISTS(HttpStatus.CONFLICT, "SOCIAL_ACCOUNT_ALREADY_EXISTS", "이미 가입된 소셜 계정입니다."),
 	SOCIAL_EMAIL_REQUIRED(HttpStatus.BAD_REQUEST, "SOCIAL_EMAIL_REQUIRED", "소셜 계정 이메일 정보가 필요합니다."),
+	PASSWORD_RESET_NOT_ALLOWED_FOR_SOCIAL(HttpStatus.BAD_REQUEST, "PASSWORD_RESET_NOT_ALLOWED_FOR_SOCIAL", "소셜 로그인 계정은 비밀번호를 재설정할 수 없습니다."),
 	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.");
 
 	private final HttpStatus status;
