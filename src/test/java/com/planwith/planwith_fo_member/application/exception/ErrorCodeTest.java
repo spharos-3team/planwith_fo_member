@@ -17,6 +17,7 @@ class ErrorCodeTest {
 	void validationAndBusinessCodesUseHttp400() {
 		assertThat(ErrorCode.INVALID_REQUEST.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(ErrorCode.EMAIL_NOT_VERIFIED.status()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(ErrorCode.PHONE_NOT_VERIFIED.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(ErrorCode.REQUIRED_TERM_NOT_AGREED.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 }

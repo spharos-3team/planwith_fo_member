@@ -19,10 +19,15 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationSendR
 import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationSendResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalSignupRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalSignupResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmRequest;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationPrepareResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.TermResponse;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmEmailVerificationUseCase;
+import com.planwith.planwith_fo_member.application.port.in.ConfirmPhoneVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ListTermsUseCase;
 import com.planwith.planwith_fo_member.application.port.in.LocalSignupUseCase;
+import com.planwith.planwith_fo_member.application.port.in.PreparePhoneVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.SendEmailVerificationUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,22 +37,28 @@ import jakarta.validation.Valid;
 @Validated
 @RestController
 @RequestMapping("/api/v1")
-@Tag(name = "member-auth", description = "Member signup / email verification / terms")
+@Tag(name = "member-auth", description = "Member signup / email & phone verification / terms")
 public class MemberAuthController {
 
 	private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
 	private final ConfirmEmailVerificationUseCase confirmEmailVerificationUseCase;
+	private final PreparePhoneVerificationUseCase preparePhoneVerificationUseCase;
+	private final ConfirmPhoneVerificationUseCase confirmPhoneVerificationUseCase;
 	private final ListTermsUseCase listTermsUseCase;
 	private final LocalSignupUseCase localSignupUseCase;
 
 	public MemberAuthController(
 			SendEmailVerificationUseCase sendEmailVerificationUseCase,
 			ConfirmEmailVerificationUseCase confirmEmailVerificationUseCase,
+			PreparePhoneVerificationUseCase preparePhoneVerificationUseCase,
+			ConfirmPhoneVerificationUseCase confirmPhoneVerificationUseCase,
 			ListTermsUseCase listTermsUseCase,
 			LocalSignupUseCase localSignupUseCase
 	) {
 		this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
 		this.confirmEmailVerificationUseCase = confirmEmailVerificationUseCase;
+		this.preparePhoneVerificationUseCase = preparePhoneVerificationUseCase;
+		this.confirmPhoneVerificationUseCase = confirmPhoneVerificationUseCase;
 		this.listTermsUseCase = listTermsUseCase;
 		this.localSignupUseCase = localSignupUseCase;
 	}
@@ -74,6 +85,30 @@ public class MemberAuthController {
 		return ResponseEntity.ok(ApiResponse.success(new EmailVerificationConfirmResponse(
 				result.email(),
 				result.verified()
+		)));
+	}
+
+	@PostMapping("/auth/phone-verifications")
+	@Operation(summary = "본인인증 요청 준비 (포트원 SDK용 storeId/channelKey/identityVerificationId 발급)")
+	public ResponseEntity<ApiResponse<PhoneVerificationPrepareResponse>> preparePhoneVerification() {
+		var result = preparePhoneVerificationUseCase.prepare();
+		return ResponseEntity.ok(ApiResponse.success(new PhoneVerificationPrepareResponse(
+				result.storeId(),
+				result.channelKey(),
+				result.identityVerificationId()
+		)));
+	}
+
+	@PostMapping("/auth/phone-verifications/confirm")
+	@Operation(summary = "본인인증 완료 확인 (포트원 서버 조회)")
+	public ResponseEntity<ApiResponse<PhoneVerificationConfirmResponse>> confirmPhoneVerification(
+			@Valid @RequestBody PhoneVerificationConfirmRequest request
+	) {
+		var result = confirmPhoneVerificationUseCase.confirm(request.identityVerificationId());
+		return ResponseEntity.ok(ApiResponse.success(new PhoneVerificationConfirmResponse(
+				result.verified(),
+				result.phoneNumber(),
+				result.maskedPhoneNumber()
 		)));
 	}
 

@@ -50,4 +50,9 @@ public class InMemoryEmailVerificationStore implements EmailVerificationStorePor
 		codes.remove(email);
 		verifiedUntil.remove(email);
 	}
+
+	public void clearAll() {
+		codes.clear();
+		verifiedUntil.clear();
+	}
 }

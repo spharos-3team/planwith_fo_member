@@ -18,3 +18,10 @@ app:
     code-ttl-seconds: 600
     verified-ttl-seconds: 1800
     code-length: 6
+  portone:
+    store-id: store-test
+    channel-key: channel-key-test
+    api-secret: test-secret
+    api-base-url: https://api.portone.io
+    verified-ttl-seconds: 1800
+    stub-enabled: true

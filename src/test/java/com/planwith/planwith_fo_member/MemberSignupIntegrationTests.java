@@ -18,6 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.planwith.planwith_fo_member.adapter.out.persistence.terms.TermsJpaEntity;
 import com.planwith.planwith_fo_member.adapter.out.persistence.terms.TermsJpaRepository;
+import com.planwith.planwith_fo_member.adapter.out.verification.InMemoryEmailVerificationStore;
+import com.planwith.planwith_fo_member.adapter.out.verification.InMemoryPhoneVerificationStore;
 import com.planwith.planwith_fo_member.application.port.out.EmailVerificationStorePort;
 
 @SpringBootTest
@@ -28,6 +30,7 @@ class MemberSignupIntegrationTests {
 	private static final UUID SERVICE_TERM = UUID.fromString("11111111-1111-1111-1111-111111111111");
 	private static final UUID PRIVACY_TERM = UUID.fromString("22222222-2222-2222-2222-222222222222");
 	private static final UUID MARKETING_TERM = UUID.fromString("33333333-3333-3333-3333-333333333333");
+	private static final String DEFAULT_PHONE = "01012345678";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -38,8 +41,16 @@ class MemberSignupIntegrationTests {
 	@Autowired
 	private EmailVerificationStorePort emailVerificationStorePort;
 
+	@Autowired
+	private InMemoryEmailVerificationStore emailVerificationStore;
+
+	@Autowired
+	private InMemoryPhoneVerificationStore phoneVerificationStore;
+
 	@BeforeEach
 	void setUp() {
+		emailVerificationStore.clearAll();
+		phoneVerificationStore.clearAll();
 		termsJpaRepository.deleteAll();
 		saveTerm(SERVICE_TERM, "서비스 이용약관", "SERVICE", true);
 		saveTerm(PRIVACY_TERM, "개인정보 처리방침", "PRIVACY", true);
@@ -56,27 +67,24 @@ class MemberSignupIntegrationTests {
 	}
 
 	@Test
-	void signupSucceedsAfterEmailVerification() throws Exception {
+	void preparePhoneVerificationReturnsSdkParams() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/phone-verifications"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.storeId").value("store-test"))
+				.andExpect(jsonPath("$.data.channelKey").value("channel-key-test"))
+				.andExpect(jsonPath("$.data.identityVerificationId").isNotEmpty());
+	}
+
+	@Test
+	void signupSucceedsAfterEmailAndPhoneVerification() throws Exception {
 		String email = "signup-ok@example.com";
 		verifyEmail(email);
+		verifyPhone(DEFAULT_PHONE);
 
 		mockMvc.perform(post("/api/v1/members")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "email": "%s",
-								  "password": "Password1!",
-								  "phoneNumber": "01012345678",
-								  "nickname": "플랜유저",
-								  "profileImage": null,
-								  "profileIntro": "hello",
-								  "agreements": [
-								    {"termUuid": "%s", "agreed": true},
-								    {"termUuid": "%s", "agreed": true},
-								    {"termUuid": "%s", "agreed": false}
-								  ]
-								}
-								""".formatted(email, SERVICE_TERM, PRIVACY_TERM, MARKETING_TERM)))
+						.content(signupBody(email, "플랜유저", DEFAULT_PHONE, true, true, false)))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data.email").value(email))
@@ -89,42 +97,36 @@ class MemberSignupIntegrationTests {
 	void signupFailsWhenEmailNotVerified() throws Exception {
 		mockMvc.perform(post("/api/v1/members")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "email": "not-verified@example.com",
-								  "password": "Password1!",
-								  "nickname": "미인증",
-								  "agreements": [
-								    {"termUuid": "%s", "agreed": true},
-								    {"termUuid": "%s", "agreed": true}
-								  ]
-								}
-								""".formatted(SERVICE_TERM, PRIVACY_TERM)))
+						.content(signupBody("not-verified@example.com", "미인증", DEFAULT_PHONE, true, true, false)))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.error.code").value("EMAIL_NOT_VERIFIED"));
 	}
 
 	@Test
+	void signupFailsWhenPhoneNotVerified() throws Exception {
+		String email = "phone-missing@example.com";
+		verifyEmail(email);
+
+		mockMvc.perform(post("/api/v1/members")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(signupBody(email, "폰미인증", DEFAULT_PHONE, true, true, false)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("PHONE_NOT_VERIFIED"));
+	}
+
+	@Test
 	void signupFailsWhenEmailDuplicated() throws Exception {
 		String email = "dup@example.com";
 		verifyEmail(email);
-		signup(email, "닉네임1");
+		verifyPhone(DEFAULT_PHONE);
+		signup(email, "닉네임1", DEFAULT_PHONE);
 
 		emailVerificationStorePort.markVerified(email, java.time.Instant.now().plusSeconds(600));
+		verifyPhone("01099998888");
 		mockMvc.perform(post("/api/v1/members")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "email": "%s",
-								  "password": "Password1!",
-								  "nickname": "닉네임2",
-								  "agreements": [
-								    {"termUuid": "%s", "agreed": true},
-								    {"termUuid": "%s", "agreed": true}
-								  ]
-								}
-								""".formatted(email, SERVICE_TERM, PRIVACY_TERM)))
+						.content(signupBody(email, "닉네임2", "01099998888", true, true, false)))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.error.code").value("EMAIL_ALREADY_EXISTS"));
 	}
@@ -133,7 +135,8 @@ class MemberSignupIntegrationTests {
 	void sendEmailVerificationFailsWhenEmailAlreadyRegistered() throws Exception {
 		String email = "exists@example.com";
 		verifyEmail(email);
-		signup(email, "기존유저");
+		verifyPhone(DEFAULT_PHONE);
+		signup(email, "기존유저", DEFAULT_PHONE);
 
 		mockMvc.perform(post("/api/v1/auth/email-verifications")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -146,20 +149,11 @@ class MemberSignupIntegrationTests {
 	void signupFailsWhenRequiredTermNotAgreed() throws Exception {
 		String email = "terms@example.com";
 		verifyEmail(email);
+		verifyPhone(DEFAULT_PHONE);
 
 		mockMvc.perform(post("/api/v1/members")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "email": "%s",
-								  "password": "Password1!",
-								  "nickname": "약관미동의",
-								  "agreements": [
-								    {"termUuid": "%s", "agreed": true},
-								    {"termUuid": "%s", "agreed": false}
-								  ]
-								}
-								""".formatted(email, SERVICE_TERM, PRIVACY_TERM)))
+						.content(signupBody(email, "약관미동의", DEFAULT_PHONE, true, false, false)))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.error.code").value("REQUIRED_TERM_NOT_AGREED"));
 	}
@@ -201,21 +195,55 @@ class MemberSignupIntegrationTests {
 				.andExpect(jsonPath("$.data.verified").value(true));
 	}
 
-	private void signup(String email, String nickname) throws Exception {
-		mockMvc.perform(post("/api/v1/members")
+	private void verifyPhone(String phoneNumber) throws Exception {
+		String identityVerificationId = "identity-verification-stub-" + phoneNumber;
+		mockMvc.perform(post("/api/v1/auth/phone-verifications/confirm")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{
-								  "email": "%s",
-								  "password": "Password1!",
-								  "nickname": "%s",
-								  "agreements": [
-								    {"termUuid": "%s", "agreed": true},
-								    {"termUuid": "%s", "agreed": true}
-								  ]
-								}
-								""".formatted(email, nickname, SERVICE_TERM, PRIVACY_TERM)))
+								{"identityVerificationId": "%s"}
+								""".formatted(identityVerificationId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.verified").value(true))
+				.andExpect(jsonPath("$.data.phoneNumber").value(phoneNumber));
+	}
+
+	private void signup(String email, String nickname, String phoneNumber) throws Exception {
+		mockMvc.perform(post("/api/v1/members")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(signupBody(email, nickname, phoneNumber, true, true, false)))
 				.andExpect(status().isCreated());
+	}
+
+	private String signupBody(
+			String email,
+			String nickname,
+			String phoneNumber,
+			boolean serviceAgreed,
+			boolean privacyAgreed,
+			boolean marketingAgreed
+	) {
+		return """
+				{
+				  "email": "%s",
+				  "password": "Password1!",
+				  "phoneNumber": "%s",
+				  "nickname": "%s",
+				  "profileImage": null,
+				  "profileIntro": "hello",
+				  "agreements": [
+				    {"termUuid": "%s", "agreed": %s},
+				    {"termUuid": "%s", "agreed": %s},
+				    {"termUuid": "%s", "agreed": %s}
+				  ]
+				}
+				""".formatted(
+				email,
+				phoneNumber,
+				nickname,
+				SERVICE_TERM, serviceAgreed,
+				PRIVACY_TERM, privacyAgreed,
+				MARKETING_TERM, marketingAgreed
+		);
 	}
 
 	private void saveTerm(UUID termUuid, String title, String termType, boolean required) {

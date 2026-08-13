@@ -17,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.planwith.planwith_fo_member.application.exception.BusinessException;
 import com.planwith.planwith_fo_member.application.exception.ErrorCode;
 import com.planwith.planwith_fo_member.application.port.in.LocalSignupUseCase;
+import com.planwith.planwith_fo_member.application.auth.PhoneVerificationService;
 import com.planwith.planwith_fo_member.application.port.out.EmailVerificationStorePort;
 import com.planwith.planwith_fo_member.application.port.out.MemberRepositoryPort;
 import com.planwith.planwith_fo_member.application.port.out.MemberTermAgreementPort;
+import com.planwith.planwith_fo_member.application.port.out.PhoneVerificationStorePort;
 import com.planwith.planwith_fo_member.application.port.out.TermsRepositoryPort;
 import com.planwith.planwith_fo_member.domain.member.LoginType;
 import com.planwith.planwith_fo_member.domain.member.Member;
@@ -35,6 +37,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 	private final TermsRepositoryPort termsRepository;
 	private final MemberTermAgreementPort agreementPort;
 	private final EmailVerificationStorePort verificationStore;
+	private final PhoneVerificationStorePort phoneVerificationStore;
 	private final PasswordEncoder passwordEncoder;
 
 	public LocalSignupService(
@@ -42,12 +45,14 @@ public class LocalSignupService implements LocalSignupUseCase {
 			TermsRepositoryPort termsRepository,
 			MemberTermAgreementPort agreementPort,
 			EmailVerificationStorePort verificationStore,
+			PhoneVerificationStorePort phoneVerificationStore,
 			PasswordEncoder passwordEncoder
 	) {
 		this.memberRepository = memberRepository;
 		this.termsRepository = termsRepository;
 		this.agreementPort = agreementPort;
 		this.verificationStore = verificationStore;
+		this.phoneVerificationStore = phoneVerificationStore;
 		this.passwordEncoder = passwordEncoder;
 	}
 
@@ -55,9 +60,16 @@ public class LocalSignupService implements LocalSignupUseCase {
 	public LocalSignupResult signup(LocalSignupCommand command) {
 		String email = command.email().trim().toLowerCase();
 		String nickname = command.nickname().trim();
+		String phoneNumber = PhoneVerificationService.normalizePhone(command.phoneNumber());
 
 		if (!verificationStore.isVerified(email)) {
 			throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
+		}
+		if (phoneNumber == null || phoneNumber.isBlank()) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST, "휴대폰 번호는 필수입니다.");
+		}
+		if (!phoneVerificationStore.isVerified(phoneNumber)) {
+			throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
 		}
 		if (memberRepository.existsByEmail(email)) {
 			throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -76,7 +88,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 				LoginType.LOCAL,
 				email,
 				passwordEncoder.encode(command.password()),
-				blankToNull(command.phoneNumber()),
+				phoneNumber,
 				MemberStatus.ACTIVE,
 				createdAt
 		);
@@ -92,6 +104,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 		Member saved = memberRepository.saveLocalMember(member, profile);
 		agreementPort.saveAgreements(saved.getMemberUuid(), agreementCommands);
 		verificationStore.clear(email);
+		phoneVerificationStore.clear(phoneNumber);
 
 		return new LocalSignupResult(
 				saved.getMemberUuid(),

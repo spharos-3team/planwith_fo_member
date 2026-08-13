@@ -21,27 +21,34 @@ export PATH="$JAVA_HOME/bin:$PATH"
 ./gradlew bootRun
 ```
 
-환경변수 없이도 기본 접속은 `member_user` / `member_db` / `3307` 입니다.
-Docker 배포 시에는 `env/member.env`로 `DB_URL` 등을 덮어씁니다.
-
 - Swagger UI: `http://localhost:8082/swagger-ui/index.html`
+- 기본 PortOne은 `PORTONE_STUB_ENABLED=true` (실연동 시 storeId/channelKey/apiSecret 넣고 stub=false)
 
-## Issue #1 API
+## API
 
 | Method | Endpoint | 설명 |
 | --- | --- | --- |
 | POST | `/api/v1/auth/email-verifications` | 이메일 인증번호 발송 |
 | POST | `/api/v1/auth/email-verifications/confirm` | 이메일 인증번호 확인 |
+| POST | `/api/v1/auth/phone-verifications` | 본인인증 준비 (포트원 SDK 파라미터) |
+| POST | `/api/v1/auth/phone-verifications/confirm` | 본인인증 완료 확인 |
 | GET | `/api/v1/terms` | 약관 목록 |
-| POST | `/api/v1/members` | 로컬 회원가입 (201) |
+| POST | `/api/v1/members` | 로컬 회원가입 (201, 이메일+본인인증 필수) |
 
-공통 응답: `ApiResponse` (`success`, `data`, `error{code,message,fieldErrors}`, `timestamp`)
+공통 응답: `ApiResponse`
 
-이메일 인증코드는 현재 로그로 출력됩니다 (`LoggingEmailSender`).
+### 본인인증 흐름 (포트원 KG이니시스)
+
+1. `POST /api/v1/auth/phone-verifications` → `storeId`, `channelKey`, `identityVerificationId`
+2. FE: `PortOne.requestIdentityVerification({ storeId, channelKey, identityVerificationId, bypass... })`
+3. `POST /api/v1/auth/phone-verifications/confirm` with `identityVerificationId`
+4. 회원가입 시 같은 `phoneNumber` 사용
+
+스텁 모드 confirm 예: `identityVerificationId = "identity-verification-stub-01012345678"`
 
 ## 검증
 
-```powershell
-.\gradlew.bat clean test
-.\gradlew.bat clean build
+```bash
+./gradlew clean test
+./gradlew clean build
 ```
