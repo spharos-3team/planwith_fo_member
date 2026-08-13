@@ -35,6 +35,26 @@ export PATH="$JAVA_HOME/bin:$PATH"
 | GET | `/api/v1/terms` | 약관 목록 |
 | GET | `/api/v1/members/nicknames/availability` | 닉네임 중복확인 (2~10자) |
 | POST | `/api/v1/members` | 로컬 회원가입 (201, 이메일+본인인증 필수) |
+| POST | `/api/v1/auth/{provider}/signup` | 소셜 회원가입 (`google\|naver\|kakao`, 본인인증 필수) |
+
+### 소셜 회원가입 (스텁)
+
+1. 본인인증 confirm (스텁 id)
+2. `POST /api/v1/auth/google/signup`
+
+```json
+{
+  "authorizationCode": "stub:google-123:user@example.com",
+  "nickname": "소셜닉",
+  "phoneNumber": "01012345678",
+  "agreements": [
+    { "termUuid": "11111111-1111-1111-1111-111111111111", "agreed": true },
+    { "termUuid": "22222222-2222-2222-2222-222222222222", "agreed": true }
+  ]
+}
+```
+
+실연동: `SOCIAL_STUB_ENABLED=false` + `GOOGLE_/KAKAO_/NAVER_CLIENT_*` 환경변수.
 
 공통 응답: `ApiResponse`
 

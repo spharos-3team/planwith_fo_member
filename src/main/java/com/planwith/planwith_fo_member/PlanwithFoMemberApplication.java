@@ -8,13 +8,15 @@ import com.planwith.planwith_fo_member.config.AuthProperties;
 import com.planwith.planwith_fo_member.config.DeployProperties;
 import com.planwith.planwith_fo_member.config.EmailVerificationProperties;
 import com.planwith.planwith_fo_member.config.PortOneProperties;
+import com.planwith.planwith_fo_member.config.SocialOAuthProperties;
 
 @SpringBootApplication
 @EnableConfigurationProperties({
 		AuthProperties.class,
 		DeployProperties.class,
 		EmailVerificationProperties.class,
-		PortOneProperties.class
+		PortOneProperties.class,
+		SocialOAuthProperties.class
 })
 public class PlanwithFoMemberApplication {
 

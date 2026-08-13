@@ -121,6 +121,14 @@ public class MemberJpaEntity {
 		this.phoneNumber = phoneNumber;
 	}
 
+	public String getSocialId() {
+		return socialId;
+	}
+
+	public void setSocialId(String socialId) {
+		this.socialId = socialId;
+	}
+
 	public MemberStatus getStatus() {
 		return status;
 	}
