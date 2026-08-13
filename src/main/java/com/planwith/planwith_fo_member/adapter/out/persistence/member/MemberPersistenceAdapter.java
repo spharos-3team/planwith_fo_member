@@ -86,6 +86,12 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
+	public Optional<Member> findByLoginTypeAndSocialId(LoginType loginType, String socialId) {
+		return memberJpaRepository.findByLoginTypeAndSocialId(loginType, socialId).map(this::toDomain);
+	}
+
+	@Override
 	public void updateLastLoginAt(UUID memberUuid, Instant lastLoginAt) {
 		MemberJpaEntity entity = memberJpaRepository.findByMemberUuid(memberUuid.toString())
 				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));

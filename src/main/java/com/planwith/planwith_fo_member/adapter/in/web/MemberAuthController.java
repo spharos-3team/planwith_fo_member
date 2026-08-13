@@ -28,6 +28,8 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.NicknameAvailabilityRe
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationPrepareResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialLoginRequest;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialLoginResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialSignupRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialSignupResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.TermResponse;
@@ -42,6 +44,7 @@ import com.planwith.planwith_fo_member.application.port.in.LogoutUseCase;
 import com.planwith.planwith_fo_member.application.port.in.PreparePhoneVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ReissueTokenUseCase;
 import com.planwith.planwith_fo_member.application.port.in.SendEmailVerificationUseCase;
+import com.planwith.planwith_fo_member.application.port.in.SocialLoginUseCase;
 import com.planwith.planwith_fo_member.application.port.in.SocialSignupUseCase;
 import com.planwith.planwith_fo_member.config.JwtProperties;
 import com.planwith.planwith_fo_member.config.RefreshCookieProperties;
@@ -66,6 +69,7 @@ public class MemberAuthController {
 	private final ListTermsUseCase listTermsUseCase;
 	private final LocalSignupUseCase localSignupUseCase;
 	private final SocialSignupUseCase socialSignupUseCase;
+	private final SocialLoginUseCase socialLoginUseCase;
 	private final LocalLoginUseCase localLoginUseCase;
 	private final ReissueTokenUseCase reissueTokenUseCase;
 	private final LogoutUseCase logoutUseCase;
@@ -81,6 +85,7 @@ public class MemberAuthController {
 			ListTermsUseCase listTermsUseCase,
 			LocalSignupUseCase localSignupUseCase,
 			SocialSignupUseCase socialSignupUseCase,
+			SocialLoginUseCase socialLoginUseCase,
 			LocalLoginUseCase localLoginUseCase,
 			ReissueTokenUseCase reissueTokenUseCase,
 			LogoutUseCase logoutUseCase,
@@ -95,6 +100,7 @@ public class MemberAuthController {
 		this.listTermsUseCase = listTermsUseCase;
 		this.localSignupUseCase = localSignupUseCase;
 		this.socialSignupUseCase = socialSignupUseCase;
+		this.socialLoginUseCase = socialLoginUseCase;
 		this.localLoginUseCase = localLoginUseCase;
 		this.reissueTokenUseCase = reissueTokenUseCase;
 		this.logoutUseCase = logoutUseCase;
@@ -182,8 +188,46 @@ public class MemberAuthController {
 				.build();
 	}
 
+	@PostMapping("/auth/{provider}/login")
+	@Operation(summary = "소셜 원클릭 로그인 (authorizationCode만, 기가입=토큰 / 미가입=isNewMember)")
+	public ResponseEntity<ApiResponse<SocialLoginResponse>> socialLogin(
+			@PathVariable String provider,
+			@Valid @RequestBody SocialLoginRequest request
+	) {
+		LoginType loginType = SocialProviderParser.parse(provider);
+		var result = socialLoginUseCase.login(loginType, new SocialLoginUseCase.SocialLoginCommand(
+				request.authorizationCode(),
+				request.redirectUri()
+		));
+		if (result.isNewMember() || result.tokens() == null) {
+			return ResponseEntity.ok(ApiResponse.success(new SocialLoginResponse(
+					true,
+					null,
+					null,
+					null,
+					null
+			)));
+		}
+		var tokens = result.tokens();
+		ResponseCookie cookie = RefreshCookieWriter.write(tokens.refreshToken(), refreshCookieProperties, jwtProperties);
+		SocialLoginResponse body = new SocialLoginResponse(
+				false,
+				"Bearer",
+				tokens.accessToken(),
+				tokens.accessTokenExpiresIn(),
+				new SocialLoginResponse.TokenUser(
+						tokens.memberUuid().toString(),
+						tokens.roles(),
+						tokens.scopes()
+				)
+		);
+		return ResponseEntity.ok()
+				.header(HttpHeaders.SET_COOKIE, cookie.toString())
+				.body(ApiResponse.success(body));
+	}
+
 	@PostMapping("/auth/{provider}/signup")
-	@Operation(summary = "소셜 회원가입 (google|naver|kakao)")
+	@Operation(summary = "소셜 회원가입 (비밀번호 없음, 본인인증·닉네임·약관, 가입 직후 토큰 발급)")
 	public ResponseEntity<ApiResponse<SocialSignupResponse>> socialSignup(
 			@PathVariable String provider,
 			@Valid @RequestBody SocialSignupRequest request
@@ -200,12 +244,24 @@ public class MemberAuthController {
 						.map(item -> new SocialSignupUseCase.AgreementItem(item.termUuid(), Boolean.TRUE.equals(item.agreed())))
 						.toList()
 		));
-		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(new SocialSignupResponse(
-				result.memberUuid(),
-				result.email(),
-				result.nickname(),
-				result.createdAt()
-		)));
+		var tokens = result.tokens();
+		ResponseCookie cookie = RefreshCookieWriter.write(tokens.refreshToken(), refreshCookieProperties, jwtProperties);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.header(HttpHeaders.SET_COOKIE, cookie.toString())
+				.body(ApiResponse.success(new SocialSignupResponse(
+						result.memberUuid(),
+						result.email(),
+						result.nickname(),
+						result.createdAt(),
+						"Bearer",
+						tokens.accessToken(),
+						tokens.accessTokenExpiresIn(),
+						new SocialSignupResponse.TokenUser(
+								tokens.memberUuid().toString(),
+								tokens.roles(),
+								tokens.scopes()
+						)
+				)));
 	}
 
 	@GetMapping("/terms")

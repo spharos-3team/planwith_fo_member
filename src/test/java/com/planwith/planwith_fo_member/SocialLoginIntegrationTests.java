@@ -1,5 +1,6 @@
 package com.planwith.planwith_fo_member;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -18,13 +19,13 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.planwith.planwith_fo_member.adapter.out.persistence.terms.TermsJpaEntity;
 import com.planwith.planwith_fo_member.adapter.out.persistence.terms.TermsJpaRepository;
-import com.planwith.planwith_fo_member.adapter.out.verification.InMemoryEmailVerificationStore;
+import com.planwith.planwith_fo_member.adapter.out.token.InMemoryRefreshTokenStore;
 import com.planwith.planwith_fo_member.adapter.out.verification.InMemoryPhoneVerificationStore;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class SocialSignupIntegrationTests {
+class SocialLoginIntegrationTests {
 
 	private static final UUID SERVICE_TERM = UUID.fromString("11111111-1111-1111-1111-111111111111");
 	private static final UUID PRIVACY_TERM = UUID.fromString("22222222-2222-2222-2222-222222222222");
@@ -37,79 +38,63 @@ class SocialSignupIntegrationTests {
 	private TermsJpaRepository termsJpaRepository;
 
 	@Autowired
-	private InMemoryEmailVerificationStore emailVerificationStore;
+	private InMemoryPhoneVerificationStore phoneVerificationStore;
 
 	@Autowired
-	private InMemoryPhoneVerificationStore phoneVerificationStore;
+	private InMemoryRefreshTokenStore refreshTokenStore;
 
 	@BeforeEach
 	void setUp() {
-		emailVerificationStore.clearAll();
 		phoneVerificationStore.clearAll();
+		refreshTokenStore.clearAll();
 		termsJpaRepository.deleteAll();
 		saveTerm(SERVICE_TERM, "서비스 이용약관", "SERVICE", true);
 		saveTerm(PRIVACY_TERM, "개인정보 처리방침", "PRIVACY", true);
 	}
 
 	@Test
-	void socialSignupSucceedsWithStubCode() throws Exception {
-		verifyPhone(PHONE);
-
-		mockMvc.perform(post("/api/v1/auth/google/signup")
+	void socialLoginReturnsNewMemberWhenNotRegistered() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/google/login")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(signupBody("stub:google-1001:social1@example.com", "소셜유저1")))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.success").value(true))
-				.andExpect(jsonPath("$.data.email").value("social1@example.com"))
-				.andExpect(jsonPath("$.data.nickname").value("소셜유저1"))
-				.andExpect(jsonPath("$.data.memberUuid").isNotEmpty())
-				.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
-				.andExpect(cookie().exists("refresh_token"));
+						.content("""
+								{"authorizationCode":"stub:google-new:new@example.com"}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.isNewMember").value(true))
+				.andExpect(jsonPath("$.data.accessToken").value(nullValue()))
+				.andExpect(cookie().doesNotExist("refresh_token"));
 	}
 
 	@Test
-	void socialSignupFailsWhenPhoneNotVerified() throws Exception {
+	void socialLoginIssuesTokensForExistingMember() throws Exception {
+		verifyPhone(PHONE);
 		mockMvc.perform(post("/api/v1/auth/kakao/signup")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(signupBody("stub:kakao-1:kakao@example.com", "카카오유저")))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.error.code").value("PHONE_NOT_VERIFIED"));
-	}
-
-	@Test
-	void socialSignupFailsWhenSocialAccountDuplicated() throws Exception {
-		verifyPhone(PHONE);
-		mockMvc.perform(post("/api/v1/auth/naver/signup")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(signupBody("stub:naver-9:naver1@example.com", "네이버1")))
-				.andExpect(status().isCreated());
-
-		verifyPhone("01099998888");
-		mockMvc.perform(post("/api/v1/auth/naver/signup")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
-								  "authorizationCode": "stub:naver-9:naver2@example.com",
-								  "nickname": "네이버2",
-								  "phoneNumber": "01099998888",
+								  "authorizationCode": "stub:kakao-login-1:kakao-login@example.com",
+								  "nickname": "카카오닉",
+								  "phoneNumber": "%s",
 								  "agreements": [
 								    {"termUuid": "%s", "agreed": true},
 								    {"termUuid": "%s", "agreed": true}
 								  ]
 								}
-								""".formatted(SERVICE_TERM, PRIVACY_TERM)))
-				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.error.code").value("SOCIAL_ACCOUNT_ALREADY_EXISTS"));
-	}
+								""".formatted(PHONE, SERVICE_TERM, PRIVACY_TERM)))
+				.andExpect(status().isCreated());
 
-	@Test
-	void socialSignupRejectsUnsupportedProvider() throws Exception {
-		verifyPhone(PHONE);
-		mockMvc.perform(post("/api/v1/auth/facebook/signup")
+		mockMvc.perform(post("/api/v1/auth/kakao/login")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(signupBody("stub:fb-1:fb@example.com", "페북유저")))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.error.code").value("UNSUPPORTED_PROVIDER"));
+						.content("""
+								{"authorizationCode":"stub:kakao-login-1:kakao-login@example.com"}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.isNewMember").value(false))
+				.andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+				.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+				.andExpect(jsonPath("$.data.user.userId").isNotEmpty())
+				.andExpect(cookie().exists("refresh_token"))
+				.andExpect(cookie().httpOnly("refresh_token", true));
 	}
 
 	private void verifyPhone(String phoneNumber) throws Exception {
@@ -117,21 +102,6 @@ class SocialSignupIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"identityVerificationId\": \"identity-verification-stub-%s\"}".formatted(phoneNumber)))
 				.andExpect(status().isOk());
-	}
-
-	private String signupBody(String authorizationCode, String nickname) {
-		return """
-				{
-				  "authorizationCode": "%s",
-				  "nickname": "%s",
-				  "phoneNumber": "%s",
-				  "profileIntro": "hello",
-				  "agreements": [
-				    {"termUuid": "%s", "agreed": true},
-				    {"termUuid": "%s", "agreed": true}
-				  ]
-				}
-				""".formatted(authorizationCode, nickname, PHONE, SERVICE_TERM, PRIVACY_TERM);
 	}
 
 	private void saveTerm(UUID termUuid, String title, String termType, boolean required) {
