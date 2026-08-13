@@ -40,6 +40,14 @@ public class TermsPersistenceAdapter implements TermsRepositoryPort {
 		return termsJpaRepository.findByTermUuid(termUuid.toString()).map(this::toDomain);
 	}
 
+	@Override
+	public List<Term> findByTermIds(List<Long> termIds) {
+		if (termIds == null || termIds.isEmpty()) {
+			return List.of();
+		}
+		return termsJpaRepository.findByTermIdIn(termIds).stream().map(this::toDomain).toList();
+	}
+
 	private Term toDomain(TermsJpaEntity entity) {
 		return new Term(
 				entity.getTermId(),

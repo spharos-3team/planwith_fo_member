@@ -100,6 +100,15 @@ public class InMemoryRefreshTokenStore implements RefreshTokenStorePort {
 	}
 
 	@Override
+	public void revokeAllForMember(UUID memberUuid) {
+		byHash.values().stream()
+				.filter(stored -> stored.memberUuid().equals(memberUuid) && !stored.revoked())
+				.map(StoredRefreshToken::familyId)
+				.distinct()
+				.forEach(this::revokeFamily);
+	}
+
+	@Override
 	public void clearAll() {
 		byHash.clear();
 		familyHashes.clear();

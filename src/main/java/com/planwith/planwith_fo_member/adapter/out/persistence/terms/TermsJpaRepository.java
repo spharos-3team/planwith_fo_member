@@ -14,4 +14,6 @@ public interface TermsJpaRepository extends JpaRepository<TermsJpaEntity, Long> 
 	List<TermsJpaEntity> findByActiveTrueAndRequiredTrueOrderByTermIdAsc();
 
 	Optional<TermsJpaEntity> findByTermUuid(String termUuid);
+
+	List<TermsJpaEntity> findByTermIdIn(List<Long> termIds);
 }

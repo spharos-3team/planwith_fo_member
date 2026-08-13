@@ -13,4 +13,6 @@ public interface TermsRepositoryPort {
 	List<Term> findActiveRequiredTerms();
 
 	Optional<Term> findByUuid(UUID termUuid);
+
+	List<Term> findByTermIds(List<Long> termIds);
 }

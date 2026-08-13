@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import com.planwith.planwith_fo_member.config.AuthProperties;
 import com.planwith.planwith_fo_member.config.DeployProperties;
 import com.planwith.planwith_fo_member.config.EmailVerificationProperties;
+import com.planwith.planwith_fo_member.config.GatewayTrustProperties;
 import com.planwith.planwith_fo_member.config.JwtProperties;
 import com.planwith.planwith_fo_member.config.PortOneProperties;
 import com.planwith.planwith_fo_member.config.RefreshCookieProperties;
@@ -20,7 +21,8 @@ import com.planwith.planwith_fo_member.config.SocialOAuthProperties;
 		PortOneProperties.class,
 		SocialOAuthProperties.class,
 		JwtProperties.class,
-		RefreshCookieProperties.class
+		RefreshCookieProperties.class,
+		GatewayTrustProperties.class
 })
 public class PlanwithFoMemberApplication {
 
