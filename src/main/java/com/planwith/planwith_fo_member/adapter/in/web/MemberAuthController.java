@@ -2,9 +2,12 @@ package com.planwith.planwith_fo_member.adapter.in.web;
 
 import java.util.List;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +21,7 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationConfi
 import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationConfirmResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationSendRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationSendResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalLoginRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalSignupRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalSignupResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.NicknameAvailabilityResponse;
@@ -27,14 +31,20 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationPrepa
 import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialSignupRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialSignupResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.TermResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.TokenResponse;
 import com.planwith.planwith_fo_member.application.port.in.CheckNicknameAvailabilityUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmEmailVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmPhoneVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ListTermsUseCase;
+import com.planwith.planwith_fo_member.application.port.in.LocalLoginUseCase;
 import com.planwith.planwith_fo_member.application.port.in.LocalSignupUseCase;
+import com.planwith.planwith_fo_member.application.port.in.LogoutUseCase;
 import com.planwith.planwith_fo_member.application.port.in.PreparePhoneVerificationUseCase;
+import com.planwith.planwith_fo_member.application.port.in.ReissueTokenUseCase;
 import com.planwith.planwith_fo_member.application.port.in.SendEmailVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.SocialSignupUseCase;
+import com.planwith.planwith_fo_member.config.JwtProperties;
+import com.planwith.planwith_fo_member.config.RefreshCookieProperties;
 import com.planwith.planwith_fo_member.domain.member.LoginType;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,7 +66,12 @@ public class MemberAuthController {
 	private final ListTermsUseCase listTermsUseCase;
 	private final LocalSignupUseCase localSignupUseCase;
 	private final SocialSignupUseCase socialSignupUseCase;
+	private final LocalLoginUseCase localLoginUseCase;
+	private final ReissueTokenUseCase reissueTokenUseCase;
+	private final LogoutUseCase logoutUseCase;
 	private final CheckNicknameAvailabilityUseCase checkNicknameAvailabilityUseCase;
+	private final RefreshCookieProperties refreshCookieProperties;
+	private final JwtProperties jwtProperties;
 
 	public MemberAuthController(
 			SendEmailVerificationUseCase sendEmailVerificationUseCase,
@@ -66,7 +81,12 @@ public class MemberAuthController {
 			ListTermsUseCase listTermsUseCase,
 			LocalSignupUseCase localSignupUseCase,
 			SocialSignupUseCase socialSignupUseCase,
-			CheckNicknameAvailabilityUseCase checkNicknameAvailabilityUseCase
+			LocalLoginUseCase localLoginUseCase,
+			ReissueTokenUseCase reissueTokenUseCase,
+			LogoutUseCase logoutUseCase,
+			CheckNicknameAvailabilityUseCase checkNicknameAvailabilityUseCase,
+			RefreshCookieProperties refreshCookieProperties,
+			JwtProperties jwtProperties
 	) {
 		this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
 		this.confirmEmailVerificationUseCase = confirmEmailVerificationUseCase;
@@ -75,7 +95,12 @@ public class MemberAuthController {
 		this.listTermsUseCase = listTermsUseCase;
 		this.localSignupUseCase = localSignupUseCase;
 		this.socialSignupUseCase = socialSignupUseCase;
+		this.localLoginUseCase = localLoginUseCase;
+		this.reissueTokenUseCase = reissueTokenUseCase;
+		this.logoutUseCase = logoutUseCase;
 		this.checkNicknameAvailabilityUseCase = checkNicknameAvailabilityUseCase;
+		this.refreshCookieProperties = refreshCookieProperties;
+		this.jwtProperties = jwtProperties;
 	}
 
 	@PostMapping("/auth/email-verifications")
@@ -125,6 +150,36 @@ public class MemberAuthController {
 				result.phoneNumber(),
 				result.maskedPhoneNumber()
 		)));
+	}
+
+	@PostMapping("/auth/login")
+	@Operation(summary = "로컬 로그인 (Refresh Token은 HttpOnly Cookie)")
+	public ResponseEntity<ApiResponse<TokenResponse>> login(
+			@Valid @RequestBody LocalLoginRequest request
+	) {
+		var result = localLoginUseCase.login(new LocalLoginUseCase.LocalLoginCommand(request.email(), request.password()));
+		return tokenResponse(result);
+	}
+
+	@PostMapping({"/auth/refresh", "/auth/reissue"})
+	@Operation(summary = "액세스 토큰 재발급 (Refresh Cookie, /reissue 별칭 지원)")
+	public ResponseEntity<ApiResponse<TokenResponse>> refresh(
+			@CookieValue(name = "${app.refresh-cookie.name:refresh_token}", required = false) String refreshToken
+	) {
+		var result = reissueTokenUseCase.reissue(refreshToken);
+		return tokenResponse(result);
+	}
+
+	@PostMapping("/auth/logout")
+	@Operation(summary = "로그아웃 (Refresh Cookie 폐기)")
+	public ResponseEntity<Void> logout(
+			@CookieValue(name = "${app.refresh-cookie.name:refresh_token}", required = false) String refreshToken
+	) {
+		logoutUseCase.logout(refreshToken);
+		ResponseCookie cleared = RefreshCookieWriter.clear(refreshCookieProperties);
+		return ResponseEntity.noContent()
+				.header(HttpHeaders.SET_COOKIE, cleared.toString())
+				.build();
 	}
 
 	@PostMapping("/auth/{provider}/signup")
@@ -208,5 +263,22 @@ public class MemberAuthController {
 				result.nickname(),
 				result.createdAt()
 		)));
+	}
+
+	private ResponseEntity<ApiResponse<TokenResponse>> tokenResponse(LocalLoginUseCase.AuthTokenResult result) {
+		ResponseCookie cookie = RefreshCookieWriter.write(result.refreshToken(), refreshCookieProperties, jwtProperties);
+		TokenResponse body = new TokenResponse(
+				"Bearer",
+				result.accessToken(),
+				result.accessTokenExpiresIn(),
+				new TokenResponse.TokenUser(
+						result.memberUuid().toString(),
+						result.roles(),
+						result.scopes()
+				)
+		);
+		return ResponseEntity.ok()
+				.header(HttpHeaders.SET_COOKIE, cookie.toString())
+				.body(ApiResponse.success(body));
 	}
 }
