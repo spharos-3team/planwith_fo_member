@@ -18,6 +18,8 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.ApiResponse;
 import com.planwith.planwith_fo_member.application.exception.BusinessException;
 import com.planwith.planwith_fo_member.application.exception.ErrorCode;
 
+import jakarta.validation.ConstraintViolationException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -37,6 +39,19 @@ public class GlobalExceptionHandler {
 		exception.getBindingResult().getFieldErrors().forEach(error ->
 				fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage())
 		);
+		return ResponseEntity.badRequest().body(
+				ApiResponse.failure(ErrorCode.INVALID_REQUEST.code(), ErrorCode.INVALID_REQUEST.message(), fieldErrors)
+		);
+	}
+
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException exception) {
+		Map<String, String> fieldErrors = new LinkedHashMap<>();
+		exception.getConstraintViolations().forEach(violation -> {
+			String path = violation.getPropertyPath().toString();
+			String field = path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path;
+			fieldErrors.putIfAbsent(field, violation.getMessage());
+		});
 		return ResponseEntity.badRequest().body(
 				ApiResponse.failure(ErrorCode.INVALID_REQUEST.code(), ErrorCode.INVALID_REQUEST.message(), fieldErrors)
 		);

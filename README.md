@@ -33,6 +33,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 | POST | `/api/v1/auth/phone-verifications` | 본인인증 준비 (포트원 SDK 파라미터) |
 | POST | `/api/v1/auth/phone-verifications/confirm` | 본인인증 완료 확인 |
 | GET | `/api/v1/terms` | 약관 목록 |
+| GET | `/api/v1/members/nicknames/availability` | 닉네임 중복확인 (2~10자) |
 | POST | `/api/v1/members` | 로컬 회원가입 (201, 이메일+본인인증 필수) |
 
 공통 응답: `ApiResponse`

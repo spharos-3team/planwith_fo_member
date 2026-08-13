@@ -19,10 +19,12 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationSendR
 import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationSendResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalSignupRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalSignupResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.NicknameAvailabilityResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationPrepareResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.TermResponse;
+import com.planwith.planwith_fo_member.application.port.in.CheckNicknameAvailabilityUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmEmailVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmPhoneVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ListTermsUseCase;
@@ -33,6 +35,8 @@ import com.planwith.planwith_fo_member.application.port.in.SendEmailVerification
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Validated
 @RestController
@@ -46,6 +50,7 @@ public class MemberAuthController {
 	private final ConfirmPhoneVerificationUseCase confirmPhoneVerificationUseCase;
 	private final ListTermsUseCase listTermsUseCase;
 	private final LocalSignupUseCase localSignupUseCase;
+	private final CheckNicknameAvailabilityUseCase checkNicknameAvailabilityUseCase;
 
 	public MemberAuthController(
 			SendEmailVerificationUseCase sendEmailVerificationUseCase,
@@ -53,7 +58,8 @@ public class MemberAuthController {
 			PreparePhoneVerificationUseCase preparePhoneVerificationUseCase,
 			ConfirmPhoneVerificationUseCase confirmPhoneVerificationUseCase,
 			ListTermsUseCase listTermsUseCase,
-			LocalSignupUseCase localSignupUseCase
+			LocalSignupUseCase localSignupUseCase,
+			CheckNicknameAvailabilityUseCase checkNicknameAvailabilityUseCase
 	) {
 		this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
 		this.confirmEmailVerificationUseCase = confirmEmailVerificationUseCase;
@@ -61,6 +67,7 @@ public class MemberAuthController {
 		this.confirmPhoneVerificationUseCase = confirmPhoneVerificationUseCase;
 		this.listTermsUseCase = listTermsUseCase;
 		this.localSignupUseCase = localSignupUseCase;
+		this.checkNicknameAvailabilityUseCase = checkNicknameAvailabilityUseCase;
 	}
 
 	@PostMapping("/auth/email-verifications")
@@ -128,6 +135,21 @@ public class MemberAuthController {
 				))
 				.toList();
 		return ResponseEntity.ok(ApiResponse.success(terms));
+	}
+
+	@GetMapping("/members/nicknames/availability")
+	@Operation(summary = "닉네임 중복확인")
+	public ResponseEntity<ApiResponse<NicknameAvailabilityResponse>> checkNicknameAvailability(
+			@RequestParam
+			@NotBlank(message = "닉네임은 필수입니다.")
+			@Size(min = 2, max = 10, message = "닉네임은 2자 이상 10자 이하여야 합니다.")
+			String nickname
+	) {
+		var result = checkNicknameAvailabilityUseCase.check(nickname);
+		return ResponseEntity.ok(ApiResponse.success(new NicknameAvailabilityResponse(
+				result.nickname(),
+				result.available()
+		)));
 	}
 
 	@PostMapping("/members")
