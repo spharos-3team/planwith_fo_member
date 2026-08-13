@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.planwith.planwith_fo_member.application.port.in.LocalLoginUseCase.AuthTokenResult;
 import com.planwith.planwith_fo_member.domain.member.LoginType;
 
 public interface SocialSignupUseCase {
@@ -28,7 +29,8 @@ public interface SocialSignupUseCase {
 			UUID memberUuid,
 			String email,
 			String nickname,
-			Instant createdAt
+			Instant createdAt,
+			AuthTokenResult tokens
 	) {
 	}
 }

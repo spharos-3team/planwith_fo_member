@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.planwith.planwith_fo_member.application.auth.AuthSessionService;
 import com.planwith.planwith_fo_member.application.auth.PhoneVerificationService;
 import com.planwith.planwith_fo_member.application.exception.BusinessException;
 import com.planwith.planwith_fo_member.application.exception.ErrorCode;
+import com.planwith.planwith_fo_member.application.port.in.LocalLoginUseCase.AuthTokenResult;
 import com.planwith.planwith_fo_member.application.port.in.SocialSignupUseCase;
 import com.planwith.planwith_fo_member.application.port.out.MemberRepositoryPort;
 import com.planwith.planwith_fo_member.application.port.out.MemberTermAgreementPort;
@@ -30,19 +32,22 @@ public class SocialSignupService implements SocialSignupUseCase {
 	private final MemberTermAgreementPort agreementPort;
 	private final PhoneVerificationStorePort phoneVerificationStore;
 	private final TermsAgreementService termsAgreementService;
+	private final AuthSessionService authSessionService;
 
 	public SocialSignupService(
 			SocialOAuthClientPort socialOAuthClient,
 			MemberRepositoryPort memberRepository,
 			MemberTermAgreementPort agreementPort,
 			PhoneVerificationStorePort phoneVerificationStore,
-			TermsAgreementService termsAgreementService
+			TermsAgreementService termsAgreementService,
+			AuthSessionService authSessionService
 	) {
 		this.socialOAuthClient = socialOAuthClient;
 		this.memberRepository = memberRepository;
 		this.agreementPort = agreementPort;
 		this.phoneVerificationStore = phoneVerificationStore;
 		this.termsAgreementService = termsAgreementService;
+		this.authSessionService = authSessionService;
 	}
 
 	@Override
@@ -120,11 +125,13 @@ public class SocialSignupService implements SocialSignupUseCase {
 		agreementPort.saveAgreements(saved.getMemberUuid(), agreementCommands);
 		phoneVerificationStore.clear(phoneNumber);
 
+		AuthTokenResult tokens = authSessionService.issueSession(saved.getMemberUuid());
 		return new SocialSignupResult(
 				saved.getMemberUuid(),
 				saved.getEmail(),
 				nickname,
-				saved.getCreatedAt()
+				saved.getCreatedAt(),
+				tokens
 		);
 	}
 

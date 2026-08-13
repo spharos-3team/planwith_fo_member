@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-@Schema(description = "소셜 회원가입 요청")
+@Schema(description = "소셜 회원가입 요청 (비밀번호 없음, 본인인증 전화번호 필수)")
 public record SocialSignupRequest(
 		@Schema(example = "stub:google-123:user@example.com", description = "스텁: stub:{socialId}:{email} / 실연동: OAuth authorization code")
 		@NotBlank(message = "authorizationCode는 필수입니다.")
