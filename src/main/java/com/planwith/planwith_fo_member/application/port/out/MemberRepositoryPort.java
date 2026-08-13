@@ -24,5 +24,9 @@ public interface MemberRepositoryPort {
 
 	Optional<Member> findByLoginTypeAndSocialId(LoginType loginType, String socialId);
 
+	Optional<Member> findByPhoneNumber(String phoneNumber);
+
 	void updateLastLoginAt(UUID memberUuid, Instant lastLoginAt);
+
+	void updatePassword(UUID memberUuid, String passwordHash);
 }

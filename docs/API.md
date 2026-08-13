@@ -5,7 +5,7 @@
 > 공통 응답: `ApiResponse<T>`  
 > 호출 경로: `Frontend → Gateway → Member` (Access 검증은 Gateway)
 
-최종 갱신: 2026-08-13 (#8 구현 완료, PR 전)
+최종 갱신: 2026-08-13 (#9 구현 완료, PR 전)
 
 ---
 
@@ -19,7 +19,7 @@
 | ✅ Done | #6 | 소셜 회원가입 (Google/Naver/Kakao) |
 | ✅ Done | #7 | 로컬 로그인·토큰 재발급·로그아웃·JWKS |
 | ✅ Done | #8 | 소셜 로그인 |
-| ⏳ Todo | #9 | 아이디 찾기·비밀번호 재설정 |
+| ✅ Done | #9 | 아이디 찾기·비밀번호 재설정 |
 | ⏳ Todo | #10 | 내 회원정보·프로필·약관 동의 |
 
 ---
@@ -41,6 +41,15 @@
 | #7 | POST | `/api/v1/auth/logout` | Refresh Cookie | 로그아웃 (204) |
 | #7 | GET | `/oauth2/jwks` | X | Access Token 공개키 |
 | #8 | POST | `/api/v1/auth/{provider}/login` | X | 소셜 원클릭 로그인 (`isNewMember`) |
+| #9 | POST | `/api/v1/auth/find-email` | X | 아이디 찾기 (본인인증 휴대폰) |
+| #9 | POST | `/api/v1/auth/password/reset-requests` | X | 비밀번호 재설정 코드 발송 (로컬만) |
+| #9 | POST | `/api/v1/auth/password/reset` | X | 비밀번호 재설정 (204, 로컬만) |
+
+### 계정 복구 (#9)
+
+- 아이디 찾기: 본인인증 confirm 후 `phoneNumber`로 조회 → `email` / `maskedEmail` / `loginType`
+- 비밀번호 재설정: **로컬 회원만**. 소셜 계정 → `PASSWORD_RESET_NOT_ALLOWED_FOR_SOCIAL`
+- 재설정 코드: 이메일 로그 스텁 (`LoggingEmailSender`)
 
 ### 토큰 계약 (#7/#8)
 
@@ -50,25 +59,12 @@
 - 소셜 **원클릭 로그인**: `authorizationCode`만 → 기가입 즉시 토큰 / 미가입 `isNewMember=true`
 - 소셜 가입: 비밀번호 없음. `password`는 로컬 전용. 닉네임 **2~10자**
 
-### 소셜 원클릭 로그인 (#8) 스텁
-
-```http
-POST /api/v1/auth/google/login
-{"authorizationCode":"stub:google-123:user@example.com"}
-```
-
-- 미가입 → `{ "isNewMember": true, "accessToken": null, ... }` → 본인인증 후 signup
-- 기가입 → `{ "isNewMember": false, "accessToken": "...", "user": {...} }` + Refresh Cookie (추가 입력 없음)
-
 ---
 
 ## 미완료 API (예정)
 
 | Issue | Method | Endpoint | 인증 | 설명 |
 | --- | --- | --- | --- | --- |
-| #9 | POST | `/api/v1/auth/find-email` | X | 아이디 찾기 |
-| #9 | POST | `/api/v1/auth/password/reset-requests` | X | 비밀번호 재설정 요청 |
-| #9 | POST | `/api/v1/auth/password/reset` | X | 비밀번호 재설정 |
 | #10 | GET | `/api/v1/members/me` | O | 내 회원정보 조회 |
 | #10 | PATCH | `/api/v1/members/me` | O | 내 회원정보 수정 |
 | #10 | PATCH | `/api/v1/members/me/password` | O | 비밀번호 변경 |
@@ -88,20 +84,76 @@ POST /api/v1/auth/google/login
 
 ## 작업 순서
 
-1. ~~#5 → #6 → #7 → #8~~
-2. **다음: 계정 복구 (#9)**
-3. me / 프로필 / 약관 (#10)
+1. ~~#5 → #6 → #7 → #8 → #9~~
+2. **다음: me / 프로필 / 약관 (#10)**
 
 ---
 
-## 로컬 스텁 메모
+## 로컬 스텁 / 실연동 전환
 
-| 기능 | 스텁 |
-| --- | --- |
-| 이메일 인증 | 로그에 코드 출력 (`LoggingEmailSender`) |
-| 본인인증 | `PORTONE_STUB_ENABLED=true`, id=`identity-verification-stub-{phone}` |
-| 소셜 OAuth | `SOCIAL_STUB_ENABLED=true`, code=`stub:{socialId}:{email}` |
-| JWT 키 | 경로 미설정 시 ephemeral RSA (로컬만) |
+로컬·Swagger API 검증은 stub **켜 둔 상태**가 기본이다.  
+실연동은 **하나씩** `false`로 끄고 키를 채운 뒤 아래 순서로 확인한다.  
+단위 테스트(`application-test.yaml`)는 stub 고정 — 바꾸지 않는다.
+
+| 구분 | 환경변수 | 기본 | stub 동작 | 실연동 |
+| --- | --- | --- | --- | --- |
+| 포트원 본인인증 | `PORTONE_STUB_ENABLED` | `true` | id=`identity-verification-stub-{phone}` | 포트원 SDK + API |
+| 소셜 OAuth | `SOCIAL_STUB_ENABLED` | `true` | code=`stub:{socialId}:{email}` | 실제 authorization code |
+| 이메일 발송 | (없음) | 로그 | `LoggingEmailSender` | SMTP 등 미구현 |
+| JWT 키 | `JWT_*_KEY_PATH` 비움 | ephemeral | 재시작 시 키 변경 가능 | PEM 경로 지정 |
+
+환경변수 예시: `planwith-infra/env/member.env.example`
+
+### 1) 포트원 본인인증
+
+```env
+PORTONE_STUB_ENABLED=false
+PORTONE_STORE_ID=store-...
+PORTONE_CHANNEL_KEY=channel-key-...
+PORTONE_API_SECRET=...
+PORTONE_API_BASE_URL=https://api.portone.io
+```
+
+확인:
+
+1. `POST /api/v1/auth/phone-verifications` → storeId / channelKey / identityVerificationId
+2. FE에서 PortOne SDK로 본인인증 완료
+3. `POST /api/v1/auth/phone-verifications/confirm`에 SDK가 준 id 전달 (stub id 형식 사용 금지)
+4. 응답 `phoneNumber` / (가능 시) name 확인
+5. 필요 시 포트원 조회 JSON에 `verifiedCustomer.ci` 존재 여부 확인
+
+### 2) 소셜 OAuth
+
+```env
+SOCIAL_STUB_ENABLED=false
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+KAKAO_CLIENT_ID=...
+KAKAO_CLIENT_SECRET=...
+NAVER_CLIENT_ID=...
+NAVER_CLIENT_SECRET=...
+```
+
+확인:
+
+1. FE에서 provider OAuth → authorization code + redirectUri
+2. `POST /api/v1/auth/{provider}/login` 또는 `signup`에 실제 code 전달
+3. `stub:...` 코드를 넣으면 실패해야 정상
+
+### 3) 이메일 (현재 stub만)
+
+스위치 없음. 인증번호·비번 재설정 코드는 **서버 로그**에서 확인.  
+실메일 발송은 SMTP/SES 등 추가 연동 전까지 불가.
+
+### 4) JWT
+
+```env
+JWT_PRIVATE_KEY_PATH=/path/to/private.pem
+JWT_PUBLIC_KEY_PATH=/path/to/public.pem
+JWT_KEY_ID=planwith-member-...
+```
+
+확인: `GET /oauth2/jwks`의 kid가 고정되고, 재시작 후에도 기존 Access Token 검증이 깨지지 않으면 OK.
 
 ---
 

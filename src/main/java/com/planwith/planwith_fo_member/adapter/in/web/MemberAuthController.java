@@ -21,10 +21,15 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationConfi
 import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationConfirmResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationSendRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.EmailVerificationSendResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.FindEmailRequest;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.FindEmailResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalLoginRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalSignupRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.LocalSignupResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.NicknameAvailabilityResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.PasswordResetDto;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.PasswordResetRequestDto;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.PasswordResetRequestResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationPrepareResponse;
@@ -37,12 +42,15 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.TokenResponse;
 import com.planwith.planwith_fo_member.application.port.in.CheckNicknameAvailabilityUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmEmailVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmPhoneVerificationUseCase;
+import com.planwith.planwith_fo_member.application.port.in.FindEmailUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ListTermsUseCase;
 import com.planwith.planwith_fo_member.application.port.in.LocalLoginUseCase;
 import com.planwith.planwith_fo_member.application.port.in.LocalSignupUseCase;
 import com.planwith.planwith_fo_member.application.port.in.LogoutUseCase;
 import com.planwith.planwith_fo_member.application.port.in.PreparePhoneVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ReissueTokenUseCase;
+import com.planwith.planwith_fo_member.application.port.in.RequestPasswordResetUseCase;
+import com.planwith.planwith_fo_member.application.port.in.ResetPasswordUseCase;
 import com.planwith.planwith_fo_member.application.port.in.SendEmailVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.SocialLoginUseCase;
 import com.planwith.planwith_fo_member.application.port.in.SocialSignupUseCase;
@@ -73,6 +81,9 @@ public class MemberAuthController {
 	private final LocalLoginUseCase localLoginUseCase;
 	private final ReissueTokenUseCase reissueTokenUseCase;
 	private final LogoutUseCase logoutUseCase;
+	private final FindEmailUseCase findEmailUseCase;
+	private final RequestPasswordResetUseCase requestPasswordResetUseCase;
+	private final ResetPasswordUseCase resetPasswordUseCase;
 	private final CheckNicknameAvailabilityUseCase checkNicknameAvailabilityUseCase;
 	private final RefreshCookieProperties refreshCookieProperties;
 	private final JwtProperties jwtProperties;
@@ -89,6 +100,9 @@ public class MemberAuthController {
 			LocalLoginUseCase localLoginUseCase,
 			ReissueTokenUseCase reissueTokenUseCase,
 			LogoutUseCase logoutUseCase,
+			FindEmailUseCase findEmailUseCase,
+			RequestPasswordResetUseCase requestPasswordResetUseCase,
+			ResetPasswordUseCase resetPasswordUseCase,
 			CheckNicknameAvailabilityUseCase checkNicknameAvailabilityUseCase,
 			RefreshCookieProperties refreshCookieProperties,
 			JwtProperties jwtProperties
@@ -104,6 +118,9 @@ public class MemberAuthController {
 		this.localLoginUseCase = localLoginUseCase;
 		this.reissueTokenUseCase = reissueTokenUseCase;
 		this.logoutUseCase = logoutUseCase;
+		this.findEmailUseCase = findEmailUseCase;
+		this.requestPasswordResetUseCase = requestPasswordResetUseCase;
+		this.resetPasswordUseCase = resetPasswordUseCase;
 		this.checkNicknameAvailabilityUseCase = checkNicknameAvailabilityUseCase;
 		this.refreshCookieProperties = refreshCookieProperties;
 		this.jwtProperties = jwtProperties;
@@ -186,6 +203,41 @@ public class MemberAuthController {
 		return ResponseEntity.noContent()
 				.header(HttpHeaders.SET_COOKIE, cleared.toString())
 				.build();
+	}
+
+	@PostMapping("/auth/find-email")
+	@Operation(summary = "아이디 찾기 (본인인증 완료된 휴대폰 번호)")
+	public ResponseEntity<ApiResponse<FindEmailResponse>> findEmail(
+			@Valid @RequestBody FindEmailRequest request
+	) {
+		var result = findEmailUseCase.findByVerifiedPhone(request.phoneNumber());
+		return ResponseEntity.ok(ApiResponse.success(new FindEmailResponse(
+				result.email(),
+				result.maskedEmail(),
+				result.loginType()
+		)));
+	}
+
+	@PostMapping("/auth/password/reset-requests")
+	@Operation(summary = "비밀번호 재설정 인증번호 발송 (로컬 회원만)")
+	public ResponseEntity<ApiResponse<PasswordResetRequestResponse>> requestPasswordReset(
+			@Valid @RequestBody PasswordResetRequestDto request
+	) {
+		var result = requestPasswordResetUseCase.request(request.email());
+		return ResponseEntity.ok(ApiResponse.success(new PasswordResetRequestResponse(
+				result.email(),
+				result.expiresInSeconds(),
+				result.message()
+		)));
+	}
+
+	@PostMapping("/auth/password/reset")
+	@Operation(summary = "비밀번호 재설정 (로컬 회원만)")
+	public ResponseEntity<Void> resetPassword(
+			@Valid @RequestBody PasswordResetDto request
+	) {
+		resetPasswordUseCase.reset(request.email(), request.code(), request.newPassword());
+		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/auth/{provider}/login")
