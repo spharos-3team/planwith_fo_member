@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +24,8 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.NicknameAvailabilityRe
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationPrepareResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialSignupRequest;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialSignupResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.TermResponse;
 import com.planwith.planwith_fo_member.application.port.in.CheckNicknameAvailabilityUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmEmailVerificationUseCase;
@@ -31,6 +34,8 @@ import com.planwith.planwith_fo_member.application.port.in.ListTermsUseCase;
 import com.planwith.planwith_fo_member.application.port.in.LocalSignupUseCase;
 import com.planwith.planwith_fo_member.application.port.in.PreparePhoneVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.SendEmailVerificationUseCase;
+import com.planwith.planwith_fo_member.application.port.in.SocialSignupUseCase;
+import com.planwith.planwith_fo_member.domain.member.LoginType;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -50,6 +55,7 @@ public class MemberAuthController {
 	private final ConfirmPhoneVerificationUseCase confirmPhoneVerificationUseCase;
 	private final ListTermsUseCase listTermsUseCase;
 	private final LocalSignupUseCase localSignupUseCase;
+	private final SocialSignupUseCase socialSignupUseCase;
 	private final CheckNicknameAvailabilityUseCase checkNicknameAvailabilityUseCase;
 
 	public MemberAuthController(
@@ -59,6 +65,7 @@ public class MemberAuthController {
 			ConfirmPhoneVerificationUseCase confirmPhoneVerificationUseCase,
 			ListTermsUseCase listTermsUseCase,
 			LocalSignupUseCase localSignupUseCase,
+			SocialSignupUseCase socialSignupUseCase,
 			CheckNicknameAvailabilityUseCase checkNicknameAvailabilityUseCase
 	) {
 		this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
@@ -67,6 +74,7 @@ public class MemberAuthController {
 		this.confirmPhoneVerificationUseCase = confirmPhoneVerificationUseCase;
 		this.listTermsUseCase = listTermsUseCase;
 		this.localSignupUseCase = localSignupUseCase;
+		this.socialSignupUseCase = socialSignupUseCase;
 		this.checkNicknameAvailabilityUseCase = checkNicknameAvailabilityUseCase;
 	}
 
@@ -116,6 +124,32 @@ public class MemberAuthController {
 				result.verified(),
 				result.phoneNumber(),
 				result.maskedPhoneNumber()
+		)));
+	}
+
+	@PostMapping("/auth/{provider}/signup")
+	@Operation(summary = "소셜 회원가입 (google|naver|kakao)")
+	public ResponseEntity<ApiResponse<SocialSignupResponse>> socialSignup(
+			@PathVariable String provider,
+			@Valid @RequestBody SocialSignupRequest request
+	) {
+		LoginType loginType = SocialProviderParser.parse(provider);
+		var result = socialSignupUseCase.signup(loginType, new SocialSignupUseCase.SocialSignupCommand(
+				request.authorizationCode(),
+				request.redirectUri(),
+				request.nickname(),
+				request.profileImage(),
+				request.profileIntro(),
+				request.phoneNumber(),
+				request.agreements().stream()
+						.map(item -> new SocialSignupUseCase.AgreementItem(item.termUuid(), Boolean.TRUE.equals(item.agreed())))
+						.toList()
+		));
+		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(new SocialSignupResponse(
+				result.memberUuid(),
+				result.email(),
+				result.nickname(),
+				result.createdAt()
 		)));
 	}
 

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.planwith.planwith_fo_member.application.port.out.MemberRepositoryPort;
+import com.planwith.planwith_fo_member.domain.member.LoginType;
 import com.planwith.planwith_fo_member.domain.member.Member;
 import com.planwith.planwith_fo_member.domain.member.MemberProfile;
 
@@ -38,13 +39,20 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 	}
 
 	@Override
-	public Member saveLocalMember(Member member, MemberProfile profile) {
+	@Transactional(readOnly = true)
+	public boolean existsByLoginTypeAndSocialId(LoginType loginType, String socialId) {
+		return memberJpaRepository.existsByLoginTypeAndSocialId(loginType, socialId);
+	}
+
+	@Override
+	public Member saveMember(Member member, MemberProfile profile) {
 		MemberJpaEntity memberEntity = new MemberJpaEntity();
 		memberEntity.setMemberUuid(member.getMemberUuid().toString());
 		memberEntity.setLoginType(member.getLoginType());
 		memberEntity.setEmail(member.getEmail());
 		memberEntity.setPassword(member.getPasswordHash());
 		memberEntity.setPhoneNumber(member.getPhoneNumber());
+		memberEntity.setSocialId(member.getSocialId());
 		memberEntity.setStatus(member.getStatus());
 		memberEntity.setCreatedAt(member.getCreatedAt());
 
@@ -76,6 +84,7 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 				entity.getEmail(),
 				entity.getPassword(),
 				entity.getPhoneNumber(),
+				entity.getSocialId(),
 				entity.getStatus(),
 				entity.getCreatedAt()
 		);
