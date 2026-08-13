@@ -14,6 +14,7 @@ public class Member {
 	private final String socialId;
 	private final MemberStatus status;
 	private final Instant createdAt;
+	private final Instant lastLoginAt;
 
 	public Member(
 			Long memberId,
@@ -26,6 +27,21 @@ public class Member {
 			MemberStatus status,
 			Instant createdAt
 	) {
+		this(memberId, memberUuid, loginType, email, passwordHash, phoneNumber, socialId, status, createdAt, null);
+	}
+
+	public Member(
+			Long memberId,
+			UUID memberUuid,
+			LoginType loginType,
+			String email,
+			String passwordHash,
+			String phoneNumber,
+			String socialId,
+			MemberStatus status,
+			Instant createdAt,
+			Instant lastLoginAt
+	) {
 		this.memberId = memberId;
 		this.memberUuid = memberUuid;
 		this.loginType = loginType;
@@ -35,6 +51,7 @@ public class Member {
 		this.socialId = socialId;
 		this.status = status;
 		this.createdAt = createdAt;
+		this.lastLoginAt = lastLoginAt;
 	}
 
 	public Long getMemberId() {
@@ -71,5 +88,9 @@ public class Member {
 
 	public Instant getCreatedAt() {
 		return createdAt;
+	}
+
+	public Instant getLastLoginAt() {
+		return lastLoginAt;
 	}
 }

@@ -1,6 +1,7 @@
 package com.planwith.planwith_fo_member.adapter.in.web;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,12 +38,14 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialLoginRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialLoginResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialSignupRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialSignupResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.TermDetailResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.TermResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.TokenResponse;
 import com.planwith.planwith_fo_member.application.port.in.CheckNicknameAvailabilityUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmEmailVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ConfirmPhoneVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.in.FindEmailUseCase;
+import com.planwith.planwith_fo_member.application.port.in.GetTermDetailUseCase;
 import com.planwith.planwith_fo_member.application.port.in.ListTermsUseCase;
 import com.planwith.planwith_fo_member.application.port.in.LocalLoginUseCase;
 import com.planwith.planwith_fo_member.application.port.in.LocalSignupUseCase;
@@ -75,6 +78,7 @@ public class MemberAuthController {
 	private final PreparePhoneVerificationUseCase preparePhoneVerificationUseCase;
 	private final ConfirmPhoneVerificationUseCase confirmPhoneVerificationUseCase;
 	private final ListTermsUseCase listTermsUseCase;
+	private final GetTermDetailUseCase getTermDetailUseCase;
 	private final LocalSignupUseCase localSignupUseCase;
 	private final SocialSignupUseCase socialSignupUseCase;
 	private final SocialLoginUseCase socialLoginUseCase;
@@ -94,6 +98,7 @@ public class MemberAuthController {
 			PreparePhoneVerificationUseCase preparePhoneVerificationUseCase,
 			ConfirmPhoneVerificationUseCase confirmPhoneVerificationUseCase,
 			ListTermsUseCase listTermsUseCase,
+			GetTermDetailUseCase getTermDetailUseCase,
 			LocalSignupUseCase localSignupUseCase,
 			SocialSignupUseCase socialSignupUseCase,
 			SocialLoginUseCase socialLoginUseCase,
@@ -112,6 +117,7 @@ public class MemberAuthController {
 		this.preparePhoneVerificationUseCase = preparePhoneVerificationUseCase;
 		this.confirmPhoneVerificationUseCase = confirmPhoneVerificationUseCase;
 		this.listTermsUseCase = listTermsUseCase;
+		this.getTermDetailUseCase = getTermDetailUseCase;
 		this.localSignupUseCase = localSignupUseCase;
 		this.socialSignupUseCase = socialSignupUseCase;
 		this.socialLoginUseCase = socialLoginUseCase;
@@ -332,6 +338,23 @@ public class MemberAuthController {
 				))
 				.toList();
 		return ResponseEntity.ok(ApiResponse.success(terms));
+	}
+
+	@GetMapping("/terms/{termUuid}")
+	@Operation(summary = "약관 상세 조회")
+	public ResponseEntity<ApiResponse<TermDetailResponse>> getTermDetail(
+			@PathVariable UUID termUuid
+	) {
+		var term = getTermDetailUseCase.get(termUuid);
+		return ResponseEntity.ok(ApiResponse.success(new TermDetailResponse(
+				term.getTermUuid(),
+				term.getTitle(),
+				term.getTermType(),
+				term.getVersion(),
+				term.getContent(),
+				term.isRequired(),
+				term.isActive()
+		)));
 	}
 
 	@GetMapping("/members/nicknames/availability")

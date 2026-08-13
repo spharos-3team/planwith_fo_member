@@ -35,5 +35,7 @@ public interface RefreshTokenStorePort {
 
 	void revokeByRawToken(String rawToken);
 
+	void revokeAllForMember(UUID memberUuid);
+
 	void clearAll();
 }

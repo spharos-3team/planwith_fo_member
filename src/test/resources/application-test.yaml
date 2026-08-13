@@ -28,6 +28,9 @@ app:
     same-site: Lax
     domain:
     path: /api/v1/auth
+  gateway:
+    internal-token: test-gateway-token
+    trust-check-enabled: false
   email-verification:
     code-ttl-seconds: 600
     verified-ttl-seconds: 1800

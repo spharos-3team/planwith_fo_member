@@ -58,6 +58,10 @@ app:
     same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
     domain: ${REFRESH_COOKIE_DOMAIN:}
     path: ${REFRESH_COOKIE_PATH:/api/v1/auth}
+  gateway:
+    # 로컬 단독(local-direct) 기본 off. Gateway 경유 운영은 true + GATEWAY_INTERNAL_TOKEN
+    internal-token: ${GATEWAY_INTERNAL_TOKEN:}
+    trust-check-enabled: ${GATEWAY_TRUST_CHECK_ENABLED:false}
   deploy:
     marker: ${DEPLOY_MARKER:planwith-fo-member-deploy-v1}
   email-verification:

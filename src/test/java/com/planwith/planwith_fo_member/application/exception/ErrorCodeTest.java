@@ -19,5 +19,8 @@ class ErrorCodeTest {
 		assertThat(ErrorCode.EMAIL_NOT_VERIFIED.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(ErrorCode.PHONE_NOT_VERIFIED.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(ErrorCode.REQUIRED_TERM_NOT_AGREED.status()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(ErrorCode.PASSWORD_CHANGE_NOT_ALLOWED_FOR_SOCIAL.status()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(ErrorCode.REQUIRED_TERM_NOT_MODIFIABLE.status()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(ErrorCode.INVALID_PROFILE_IMAGE.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 }

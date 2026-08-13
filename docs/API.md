@@ -5,7 +5,7 @@
 > 공통 응답: `ApiResponse<T>`  
 > 호출 경로: `Frontend → Gateway → Member` (Access 검증은 Gateway)
 
-최종 갱신: 2026-08-13 (#9 구현 완료, PR 전)
+최종 갱신: 2026-08-13 (#10 구현 완료, PR 전)
 
 ---
 
@@ -20,7 +20,7 @@
 | ✅ Done | #7 | 로컬 로그인·토큰 재발급·로그아웃·JWKS |
 | ✅ Done | #8 | 소셜 로그인 |
 | ✅ Done | #9 | 아이디 찾기·비밀번호 재설정 |
-| ⏳ Todo | #10 | 내 회원정보·프로필·약관 동의 |
+| ✅ Done | #10 | 내 회원정보·프로필·약관 동의 |
 
 ---
 
@@ -44,6 +44,33 @@
 | #9 | POST | `/api/v1/auth/find-email` | X | 아이디 찾기 (본인인증 휴대폰) |
 | #9 | POST | `/api/v1/auth/password/reset-requests` | X | 비밀번호 재설정 코드 발송 (로컬만) |
 | #9 | POST | `/api/v1/auth/password/reset` | X | 비밀번호 재설정 (204, 로컬만) |
+| #10 | GET | `/api/v1/members/me` | O | 내 회원정보 조회 |
+| #10 | PATCH | `/api/v1/members/me` | O | **마이페이지 저장** (휴대폰·닉네임·선택약관·비번) |
+| #10 | PATCH | `/api/v1/members/me/profile` | O | 위와 동일 (별칭) |
+| #10 | DELETE | `/api/v1/members/me` | O | 회원 탈퇴 (soft → `DELETED`) |
+| #10 | GET | `/api/v1/members/me/profile` | O | 내 프로필 조회 |
+| #10 | POST | `/api/v1/members/me/profile/image` | O | 프로필 이미지 업로드 (stub URL) |
+| #10 | GET | `/api/v1/terms/{termUuid}` | X | 약관 상세 |
+| #10 | GET | `/api/v1/members/me/agreements` | O | 내 약관 동의 조회 (화면 로드용) |
+| #10 | POST | `/api/v1/members/me/agreements` | O | 선택 약관만 단독 변경 (보조) |
+| #10 | PATCH | `/api/v1/members/me/password` | O | 비밀번호만 단독 변경 (보조) |
+| #10 | GET | `/api/v1/members/{memberUuid}/profile` | X | 공개 프로필 |
+| #10 | GET | `/api/v1/members/{memberUuid}` | 내부 | 최소 공개정보 (Gateway Trust) |
+
+### 마이페이지 (#10)
+
+- 인증 사용자: Gateway가 넘긴 `X-Auth-User-Id` (`AuthenticatedUserContext`)
+- 로컬 Swagger: 우측 상단 **Authorize** → `X-Auth-User-Id`에 로그인 응답 `user.userId`(memberUuid) 입력 후 me API 호출
+- 탈퇴: hard delete 없음. `status=DELETED` + `deleted_at` + Refresh 전부 폐기
+- **마이페이지 저장(저장 버튼 1회)**: `PATCH /members/me` (또는 `/members/me/profile` 별칭)
+  - body 예: `phoneNumber`, `nickname`, `profileIntro`, `agreements`(선택), `currentPassword`+`newPassword`
+  - 휴대폰 변경 시에만 본인인증 완료 필요
+  - 응답: `{ member, profile, agreements }`
+- 비밀번호: **로컬만**. 소셜 → `PASSWORD_CHANGE_NOT_ALLOWED_FOR_SOCIAL`
+- 약관: **선택만** 변경 가능. 필수 변경 → `REQUIRED_TERM_NOT_MODIFIABLE`
+- `POST .../agreements`, `PATCH .../password`는 단독 수정용 보조 API
+- 프로필 이미지: 400×400, jpg/png/webp, 2MB. S3 전 단계로 `stub://profiles/{uuid}.ext` 저장
+- Gateway Trust: `GATEWAY_INTERNAL_TOKEN` + `GATEWAY_TRUST_CHECK_ENABLED` (로컬 기본 `false`)
 
 ### 계정 복구 (#9)
 
@@ -63,29 +90,15 @@
 
 ## 미완료 API (예정)
 
-| Issue | Method | Endpoint | 인증 | 설명 |
-| --- | --- | --- | --- | --- |
-| #10 | GET | `/api/v1/members/me` | O | 내 회원정보 조회 |
-| #10 | PATCH | `/api/v1/members/me` | O | 내 회원정보 수정 |
-| #10 | PATCH | `/api/v1/members/me/password` | O | 비밀번호 변경 |
-| #10 | DELETE | `/api/v1/members/me` | O | 회원 탈퇴 |
-| #10 | GET | `/api/v1/members/me/profile` | O | 내 프로필 조회 |
-| #10 | PATCH | `/api/v1/members/me/profile` | O | 내 프로필 수정 |
-| #10 | POST | `/api/v1/members/me/profile/image` | O | 프로필 이미지 업로드 |
-| #10 | GET | `/api/v1/terms/{termUuid}` | X | 약관 상세 |
-| #10 | POST | `/api/v1/members/me/agreements` | O | 약관 동의 등록 |
-| #10 | GET | `/api/v1/members/me/agreements` | O | 내 약관 동의 조회 |
-| #10 | GET | `/api/v1/members/{memberUuid}` | 내부 | 최소 공개정보 |
-| #10 | GET | `/api/v1/members/{memberUuid}/profile` | X | 공개 프로필 |
-
+코어 27개 API 완료.  
 후속(코어 밖, 별도 이슈): 팔로우 / 좋아요 / 멤버십 / 결제수단
 
 ---
 
 ## 작업 순서
 
-1. ~~#5 → #6 → #7 → #8 → #9~~
-2. **다음: me / 프로필 / 약관 (#10)**
+1. ~~#5 → #6 → #7 → #8 → #9 → #10~~
+2. 후속 도메인 이슈는 별도 트래킹
 
 ---
 
@@ -101,6 +114,7 @@
 | 소셜 OAuth | `SOCIAL_STUB_ENABLED` | `true` | code=`stub:{socialId}:{email}` | 실제 authorization code |
 | 이메일 발송 | (없음) | 로그 | `LoggingEmailSender` | SMTP 등 미구현 |
 | JWT 키 | `JWT_*_KEY_PATH` 비움 | ephemeral | 재시작 시 키 변경 가능 | PEM 경로 지정 |
+| Gateway Trust | `GATEWAY_TRUST_CHECK_ENABLED` | `false` | Header `X-Auth-User-Id` 직접 | Gateway + `GATEWAY_INTERNAL_TOKEN` |
 
 환경변수 예시: `planwith-infra/env/member.env.example`
 
@@ -154,6 +168,15 @@ JWT_KEY_ID=planwith-member-...
 ```
 
 확인: `GET /oauth2/jwks`의 kid가 고정되고, 재시작 후에도 기존 Access Token 검증이 깨지지 않으면 OK.
+
+### 5) Gateway Trust
+
+```env
+GATEWAY_TRUST_CHECK_ENABLED=true
+GATEWAY_INTERNAL_TOKEN=...
+```
+
+확인: Gateway 없이 Member를 직접 치면 `FORBIDDEN`. me API는 Gateway가 붙인 `X-Auth-User-Id`로 동작.
 
 ---
 
