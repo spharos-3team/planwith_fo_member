@@ -137,6 +137,14 @@ public class MemberJpaEntity {
 		this.status = status;
 	}
 
+	public Instant getLastLoginAt() {
+		return lastLoginAt;
+	}
+
+	public void setLastLoginAt(Instant lastLoginAt) {
+		this.lastLoginAt = lastLoginAt;
+	}
+
 	public Instant getCreatedAt() {
 		return createdAt;
 	}

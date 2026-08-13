@@ -1,11 +1,14 @@
 package com.planwith.planwith_fo_member.adapter.out.persistence.member;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.planwith.planwith_fo_member.application.exception.BusinessException;
+import com.planwith.planwith_fo_member.application.exception.ErrorCode;
 import com.planwith.planwith_fo_member.application.port.out.MemberRepositoryPort;
 import com.planwith.planwith_fo_member.domain.member.LoginType;
 import com.planwith.planwith_fo_member.domain.member.Member;
@@ -74,6 +77,20 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 	@Transactional(readOnly = true)
 	public Optional<Member> findByUuid(UUID memberUuid) {
 		return memberJpaRepository.findByMemberUuid(memberUuid.toString()).map(this::toDomain);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<Member> findByEmail(String email) {
+		return memberJpaRepository.findByEmailIgnoreCase(email).map(this::toDomain);
+	}
+
+	@Override
+	public void updateLastLoginAt(UUID memberUuid, Instant lastLoginAt) {
+		MemberJpaEntity entity = memberJpaRepository.findByMemberUuid(memberUuid.toString())
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+		entity.setLastLoginAt(lastLoginAt);
+		memberJpaRepository.save(entity);
 	}
 
 	private Member toDomain(MemberJpaEntity entity) {

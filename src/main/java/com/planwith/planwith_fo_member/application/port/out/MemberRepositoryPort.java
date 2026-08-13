@@ -1,5 +1,6 @@
 package com.planwith.planwith_fo_member.application.port.out;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,4 +19,8 @@ public interface MemberRepositoryPort {
 	Member saveMember(Member member, MemberProfile profile);
 
 	Optional<Member> findByUuid(UUID memberUuid);
+
+	Optional<Member> findByEmail(String email);
+
+	void updateLastLoginAt(UUID memberUuid, Instant lastLoginAt);
 }

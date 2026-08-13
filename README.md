@@ -36,6 +36,22 @@ export PATH="$JAVA_HOME/bin:$PATH"
 | GET | `/api/v1/members/nicknames/availability` | 닉네임 중복확인 (2~10자) |
 | POST | `/api/v1/members` | 로컬 회원가입 (201, 이메일+본인인증 필수) |
 | POST | `/api/v1/auth/{provider}/signup` | 소셜 회원가입 (`google\|naver\|kakao`, 본인인증 필수) |
+| POST | `/api/v1/auth/login` | 로컬 로그인 (Access body + Refresh HttpOnly Cookie) |
+| POST | `/api/v1/auth/refresh` | 토큰 재발급 (`/auth/reissue` 별칭) |
+| POST | `/api/v1/auth/logout` | 로그아웃 (204, Refresh Cookie 폐기) |
+| GET | `/oauth2/jwks` | Access Token 검증용 공개키 |
+
+### 로컬 로그인
+
+```json
+POST /api/v1/auth/login
+{ "email": "user@example.com", "password": "Password1!" }
+```
+
+- 응답 body: `tokenType`, `accessToken`, `accessTokenExpiresIn`, `user.userId/roles/scopes`
+- Refresh Token은 JSON에 포함하지 않음 → `Set-Cookie: refresh_token=...; HttpOnly; Path=/api/v1/auth`
+- Access 검증은 Gateway 책임. Member는 발급·JWKS만 담당
+- 로컬에서 RSA 키 경로 미설정 시 ephemeral 키 생성 (`JWT_PRIVATE_KEY_PATH` / `JWT_PUBLIC_KEY_PATH` 권장)
 
 ### 소셜 회원가입 (스텁)
 

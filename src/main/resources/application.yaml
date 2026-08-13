@@ -44,6 +44,20 @@ app:
   auth:
     id: ${LOGIN_ID:test-001}
     pw: ${LOGIN_PASSWORD:1234}
+  jwt:
+    issuer: ${JWT_ISSUER:http://localhost:8082}
+    audience: ${JWT_AUDIENCE:planwith-api}
+    key-id: ${JWT_KEY_ID:planwith-member-local}
+    private-key-path: ${JWT_PRIVATE_KEY_PATH:}
+    public-key-path: ${JWT_PUBLIC_KEY_PATH:}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+    refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:14d}
+  refresh-cookie:
+    name: ${REFRESH_COOKIE_NAME:refresh_token}
+    secure: ${REFRESH_COOKIE_SECURE:false}
+    same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
+    domain: ${REFRESH_COOKIE_DOMAIN:}
+    path: ${REFRESH_COOKIE_PATH:/api/v1/auth}
   deploy:
     marker: ${DEPLOY_MARKER:planwith-fo-member-deploy-v1}
   email-verification:

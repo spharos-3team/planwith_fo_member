@@ -13,4 +13,6 @@ public interface MemberJpaRepository extends JpaRepository<MemberJpaEntity, Long
 	boolean existsByLoginTypeAndSocialId(LoginType loginType, String socialId);
 
 	Optional<MemberJpaEntity> findByMemberUuid(String memberUuid);
+
+	Optional<MemberJpaEntity> findByEmailIgnoreCase(String email);
 }
