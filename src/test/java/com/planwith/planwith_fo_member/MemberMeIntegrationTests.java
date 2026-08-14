@@ -84,6 +84,7 @@ class MemberMeIntegrationTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.email").value(email))
 				.andExpect(jsonPath("$.data.phoneNumber").value(PHONE))
+				.andExpect(jsonPath("$.data.name").value("테스트사용자"))
 				.andExpect(jsonPath("$.data.loginType").value("LOCAL"));
 
 		mockMvc.perform(get("/api/v1/members/me"))
@@ -160,7 +161,8 @@ class MemberMeIntegrationTests {
 
 		mockMvc.perform(get("/api/v1/members/{memberUuid}", memberUuid))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.email").value(email));
+				.andExpect(jsonPath("$.data.email").value(email))
+				.andExpect(jsonPath("$.data.name").value("테스트사용자"));
 
 		mockMvc.perform(delete("/api/v1/members/me")
 						.header("X-Auth-User-Id", memberUuid))
@@ -187,7 +189,7 @@ class MemberMeIntegrationTests {
 		mockMvc.perform(patch("/api/v1/members/me")
 						.header("X-Auth-User-Id", memberUuid)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"phoneNumber\":\"%s\"}".formatted(newPhone)))
+						.content("{\"phoneNumber\":\"%s\",\"name\":\"테스트사용자\"}".formatted(newPhone)))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.error.code").value("PHONE_NOT_VERIFIED"));
 
@@ -195,9 +197,10 @@ class MemberMeIntegrationTests {
 		mockMvc.perform(patch("/api/v1/members/me")
 						.header("X-Auth-User-Id", memberUuid)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"phoneNumber\":\"%s\"}".formatted(newPhone)))
+						.content("{\"phoneNumber\":\"%s\",\"name\":\"테스트사용자\"}".formatted(newPhone)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.member.phoneNumber").value(newPhone));
+				.andExpect(jsonPath("$.data.member.phoneNumber").value(newPhone))
+				.andExpect(jsonPath("$.data.member.name").value("테스트사용자"));
 	}
 
 	private String signupAndGetUuid(String email, String nickname) throws Exception {
@@ -210,6 +213,7 @@ class MemberMeIntegrationTests {
 								  "email": "%s",
 								  "password": "%s",
 								  "phoneNumber": "%s",
+								  "name": "테스트사용자",
 								  "nickname": "%s",
 								  "agreements": [
 								    {"termUuid": "%s", "agreed": true},

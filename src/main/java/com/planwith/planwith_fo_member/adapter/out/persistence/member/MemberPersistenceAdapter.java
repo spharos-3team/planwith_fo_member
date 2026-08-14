@@ -62,6 +62,7 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 		memberEntity.setEmail(member.getEmail());
 		memberEntity.setPassword(member.getPasswordHash());
 		memberEntity.setPhoneNumber(member.getPhoneNumber());
+		memberEntity.setName(member.getName());
 		memberEntity.setSocialId(member.getSocialId());
 		memberEntity.setStatus(member.getStatus());
 		memberEntity.setCreatedAt(member.getCreatedAt());
@@ -126,8 +127,16 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 
 	@Override
 	public void updatePhoneNumber(UUID memberUuid, String phoneNumber) {
+		updatePhoneIdentity(memberUuid, phoneNumber, null);
+	}
+
+	@Override
+	public void updatePhoneIdentity(UUID memberUuid, String phoneNumber, String name) {
 		MemberJpaEntity entity = requireMember(memberUuid);
 		entity.setPhoneNumber(phoneNumber);
+		if (name != null) {
+			entity.setName(name);
+		}
 		memberJpaRepository.save(entity);
 	}
 
@@ -176,6 +185,7 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 				entity.getEmail(),
 				entity.getPassword(),
 				entity.getPhoneNumber(),
+				entity.getName(),
 				entity.getSocialId(),
 				entity.getStatus(),
 				entity.getCreatedAt(),

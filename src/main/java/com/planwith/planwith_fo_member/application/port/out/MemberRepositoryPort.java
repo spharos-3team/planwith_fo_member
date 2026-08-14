@@ -37,6 +37,8 @@ public interface MemberRepositoryPort {
 
 	void updatePhoneNumber(UUID memberUuid, String phoneNumber);
 
+	void updatePhoneIdentity(UUID memberUuid, String phoneNumber, String name);
+
 	void updateProfile(UUID memberUuid, String nickname, String profileImage, String profileIntro);
 
 	void updateProfileImage(UUID memberUuid, String profileImageUrl);

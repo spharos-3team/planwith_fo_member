@@ -7,7 +7,8 @@ public interface ConfirmPhoneVerificationUseCase {
 	record ConfirmPhoneVerificationResult(
 			boolean verified,
 			String phoneNumber,
-			String maskedPhoneNumber
+			String maskedPhoneNumber,
+			String name
 	) {
 	}
 }

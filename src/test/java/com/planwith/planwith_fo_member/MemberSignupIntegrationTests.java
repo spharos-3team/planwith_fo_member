@@ -159,6 +159,31 @@ class MemberSignupIntegrationTests {
 	}
 
 	@Test
+	void signupFailsWhenNameDoesNotMatchVerified() throws Exception {
+		String email = "name-mismatch@example.com";
+		verifyEmail(email);
+		verifyPhone(DEFAULT_PHONE);
+
+		mockMvc.perform(post("/api/v1/members")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "email": "%s",
+								  "password": "Password1!",
+								  "phoneNumber": "%s",
+								  "name": "다른이름",
+								  "nickname": "이름불일치",
+								  "agreements": [
+								    {"termUuid": "%s", "agreed": true},
+								    {"termUuid": "%s", "agreed": true}
+								  ]
+								}
+								""".formatted(email, DEFAULT_PHONE, SERVICE_TERM, PRIVACY_TERM)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("NAME_MISMATCH"));
+	}
+
+	@Test
 	void emailVerificationConfirmRejectsInvalidCode() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/email-verifications")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -204,7 +229,8 @@ class MemberSignupIntegrationTests {
 								""".formatted(identityVerificationId)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.verified").value(true))
-				.andExpect(jsonPath("$.data.phoneNumber").value(phoneNumber));
+				.andExpect(jsonPath("$.data.phoneNumber").value(phoneNumber))
+				.andExpect(jsonPath("$.data.name").value("테스트사용자"));
 	}
 
 	private void signup(String email, String nickname, String phoneNumber) throws Exception {
@@ -227,6 +253,7 @@ class MemberSignupIntegrationTests {
 				  "email": "%s",
 				  "password": "Password1!",
 				  "phoneNumber": "%s",
+				  "name": "테스트사용자",
 				  "nickname": "%s",
 				  "profileImage": null,
 				  "profileIntro": "hello",

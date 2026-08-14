@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PortOne 본인인증 로컬 테스트</title>
+  <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Pretendard", "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(160deg, #f3f6fb, #e8eef8 45%, #f7f1ea);
+      color: #1d2433;
+    }
+    main {
+      width: min(720px, calc(100% - 2rem));
+      margin: 2rem auto;
+      padding: 1.5rem;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(28, 40, 66, 0.08);
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgba(28, 40, 66, 0.08);
+    }
+    h1 { margin: 0 0 0.4rem; font-size: 1.5rem; }
+    p { margin: 0 0 1rem; color: #5a6578; line-height: 1.5; }
+    label { display: block; margin: 0.8rem 0 0.3rem; font-size: 0.9rem; font-weight: 600; }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid #cfd7e6;
+      border-radius: 10px;
+      font: inherit;
+    }
+    .row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1rem; }
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 0.75rem 1.1rem;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: #1f4b99;
+      color: #fff;
+    }
+    button.secondary { background: #e8eef8; color: #1f4b99; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    pre {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 12px;
+      background: #111827;
+      color: #dbe7ff;
+      overflow: auto;
+      min-height: 8rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .hint {
+      margin-top: 1rem;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      background: #fff7e8;
+      color: #7a4d00;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .warn {
+      display: none;
+      margin-top: 0.6rem;
+      padding: 0.7rem 0.9rem;
+      border-radius: 10px;
+      background: #fde8e8;
+      color: #8a1f1f;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .warn.show { display: block; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>PortOne 본인인증 로컬 테스트</h1>
+    <p>
+      1 Prepare → 2 SDK 본인인증 → 3 Confirm.<br />
+      3번은 identityVerificationId만 있으면 언제든 누를 수 있습니다.
+    </p>
+
+    <label for="apiBase">Member API Base</label>
+    <input id="apiBase" value="" />
+
+    <div class="row">
+      <button id="prepareBtn" type="button">1. Prepare</button>
+      <button id="sdkBtn" type="button" class="secondary" disabled>2. PortOne SDK 본인인증</button>
+      <button id="confirmBtn" type="button" class="secondary">3. Confirm</button>
+    </div>
+
+    <label for="storeId">storeId</label>
+    <input id="storeId" placeholder="store-..." />
+    <div id="storeWarn" class="warn">
+      storeId가 <code>store-</code>로 시작하지 않습니다.
+    </div>
+    <label for="channelKey">channelKey (본인인증 채널)</label>
+    <input id="channelKey" placeholder="channel-key-..." />
+    <label for="identityVerificationId">identityVerificationId</label>
+    <input id="identityVerificationId" />
+
+    <div class="hint">
+      favicon.ico 로그는 무시해도 됩니다.<br />
+      본인인증 후 페이지가 새로고침되면 id가 비울 수 있으니, 다시 Prepare 하거나 id를 직접 넣고 Confirm 하세요.
+    </div>
+
+    <pre id="log">대기 중...</pre>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const logEl = $("log");
+
+    $("apiBase").value = window.location.origin;
+
+    function log(title, data) {
+      const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+      logEl.textContent = `[${title}]\n${text}`;
+      console.log(title, data);
+    }
+
+    function refreshStoreWarn() {
+      const storeId = $("storeId").value.trim();
+      const bad = storeId.length > 0 && !storeId.startsWith("store-");
+      $("storeWarn").classList.toggle("show", bad);
+    }
+
+    function syncButtons() {
+      const hasPrepare = Boolean($("storeId").value.trim() && $("channelKey").value.trim() && $("identityVerificationId").value.trim());
+      $("sdkBtn").disabled = !hasPrepare;
+      refreshStoreWarn();
+    }
+
+    $("storeId").addEventListener("input", syncButtons);
+    $("channelKey").addEventListener("input", syncButtons);
+    $("identityVerificationId").addEventListener("input", syncButtons);
+
+    // redirect 방식으로 돌아온 경우 쿼리에서 id 복구
+    (function restoreFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("identityVerificationId");
+      const code = params.get("code");
+      const message = params.get("message");
+      if (id) {
+        $("identityVerificationId").value = id;
+        log("redirect 복귀", Object.fromEntries(params.entries()));
+        if (code) {
+          log("redirect 오류", { code, message });
+        } else {
+          log("redirect 성공", "이제 3. Confirm을 누르세요. storeId/channelKey가 비어 있으면 Prepare를 한 번 더 하거나 값을 직접 넣으세요.");
+        }
+      }
+      syncButtons();
+    })();
+
+    async function prepare() {
+      const base = $("apiBase").value.replace(/\/$/, "");
+      log("prepare", "요청 중...");
+      const res = await fetch(`${base}/api/v1/auth/phone-verifications`, { method: "POST" });
+      const body = await res.json();
+      log(`prepare HTTP ${res.status}`, body);
+      if (!res.ok || !body.success) {
+        throw new Error(body?.error?.message || "prepare 실패");
+      }
+      const data = body.data;
+      $("storeId").value = data.storeId || "";
+      $("channelKey").value = data.channelKey || "";
+      $("identityVerificationId").value = data.identityVerificationId || "";
+      syncButtons();
+    }
+
+    async function runSdk() {
+      if (!window.PortOne || !PortOne.requestIdentityVerification) {
+        throw new Error("PortOne SDK 로드 실패");
+      }
+      const storeId = $("storeId").value.trim();
+      const channelKey = $("channelKey").value.trim();
+      const identityVerificationId = $("identityVerificationId").value.trim();
+      if (!storeId || !channelKey || !identityVerificationId) {
+        throw new Error("Prepare를 먼저 하거나 storeId/channelKey/id를 채우세요.");
+      }
+      if (!storeId.startsWith("store-")) {
+        throw new Error("storeId는 store- 로 시작해야 합니다.");
+      }
+
+      const redirectUrl = window.location.origin + window.location.pathname;
+      const request = { storeId, channelKey, identityVerificationId, redirectUrl };
+      log("sdk request", request);
+
+      const response = await PortOne.requestIdentityVerification(request);
+      log("sdk response", response ?? "(null/undefined — 모바일 redirect면 정상일 수 있음)");
+
+      if (response && response.code != null) {
+        throw new Error(`[${response.code}] ${response.message || "SDK 실패"}`);
+      }
+      log("sdk ok", "본인인증 UI 완료. 이제 3. Confirm을 누르세요.");
+    }
+
+    async function confirm() {
+      const base = $("apiBase").value.replace(/\/$/, "");
+      const identityVerificationId = $("identityVerificationId").value.trim();
+      if (!identityVerificationId) {
+        throw new Error("identityVerificationId가 비어 있습니다. Prepare 또는 SDK 후 id를 확인하세요.");
+      }
+      log("confirm", { identityVerificationId, url: `${base}/api/v1/auth/phone-verifications/confirm` });
+      const res = await fetch(`${base}/api/v1/auth/phone-verifications/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identityVerificationId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      log(`confirm HTTP ${res.status}`, body);
+      if (!res.ok || body.success === false) {
+        throw new Error(body?.error?.message || `confirm 실패 (HTTP ${res.status})`);
+      }
+      log("confirm ok", "본인인증 서버 반영 완료");
+    }
+
+    async function wrap(btn, fn) {
+      try {
+        btn.disabled = true;
+        await fn();
+      } catch (e) {
+        log("error", e.message || String(e));
+        alert(e.message || String(e));
+      } finally {
+        btn.disabled = false;
+        syncButtons();
+      }
+    }
+
+    $("prepareBtn").addEventListener("click", () => wrap($("prepareBtn"), prepare));
+    $("sdkBtn").addEventListener("click", () => wrap($("sdkBtn"), runSdk));
+    $("confirmBtn").addEventListener("click", () => wrap($("confirmBtn"), confirm));
+  </script>
+</body>
+</html>

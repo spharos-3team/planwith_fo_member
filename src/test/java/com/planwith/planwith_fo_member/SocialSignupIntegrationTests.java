@@ -92,6 +92,7 @@ class SocialSignupIntegrationTests {
 								  "authorizationCode": "stub:naver-9:naver2@example.com",
 								  "nickname": "네이버2",
 								  "phoneNumber": "01099998888",
+								  "name": "테스트사용자",
 								  "agreements": [
 								    {"termUuid": "%s", "agreed": true},
 								    {"termUuid": "%s", "agreed": true}
@@ -125,6 +126,7 @@ class SocialSignupIntegrationTests {
 				  "authorizationCode": "%s",
 				  "nickname": "%s",
 				  "phoneNumber": "%s",
+				  "name": "테스트사용자",
 				  "profileIntro": "hello",
 				  "agreements": [
 				    {"termUuid": "%s", "agreed": true},

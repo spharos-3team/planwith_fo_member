@@ -41,6 +41,9 @@ public class MemberJpaEntity {
 	@Column(name = "phone_number", length = 30)
 	private String phoneNumber;
 
+	@Column(name = "name", length = 100)
+	private String name;
+
 	@Column(name = "social_id", length = 255)
 	private String socialId;
 
@@ -119,6 +122,14 @@ public class MemberJpaEntity {
 
 	public void setPhoneNumber(String phoneNumber) {
 		this.phoneNumber = phoneNumber;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public String getSocialId() {

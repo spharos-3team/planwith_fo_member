@@ -82,6 +82,7 @@ public class MemberMeService implements
 				member.getMemberUuid(),
 				member.getEmail(),
 				member.getPhoneNumber(),
+				member.getName(),
 				member.getLoginType(),
 				member.getStatus(),
 				member.getCreatedAt()
@@ -102,6 +103,7 @@ public class MemberMeService implements
 				member.getMemberUuid(),
 				member.getEmail(),
 				member.getPhoneNumber(),
+				member.getName(),
 				member.getLoginType(),
 				member.getStatus(),
 				member.getCreatedAt(),
