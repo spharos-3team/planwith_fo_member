@@ -120,6 +120,7 @@ class NicknameAvailabilityIntegrationTests {
 								  "email": "%s",
 								  "password": "Password1!",
 								  "phoneNumber": "%s",
+								  "name": "테스트사용자",
 								  "nickname": "%s",
 								  "agreements": [
 								    {"termUuid": "%s", "agreed": true},

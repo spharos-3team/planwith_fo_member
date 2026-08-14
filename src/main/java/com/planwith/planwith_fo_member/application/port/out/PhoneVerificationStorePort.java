@@ -5,11 +5,14 @@ import java.util.Optional;
 
 public interface PhoneVerificationStorePort {
 
-	void markVerified(String phoneNumber, Instant verifiedUntil);
+	void markVerified(String phoneNumber, String name, Instant verifiedUntil);
 
 	boolean isVerified(String phoneNumber);
 
-	Optional<String> findVerifiedPhone(String phoneNumber);
+	Optional<VerifiedPhone> findVerified(String phoneNumber);
 
 	void clear(String phoneNumber);
+
+	record VerifiedPhone(String phoneNumber, String name, Instant verifiedUntil) {
+	}
 }

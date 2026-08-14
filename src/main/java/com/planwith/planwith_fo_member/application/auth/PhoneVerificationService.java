@@ -59,16 +59,52 @@ public class PhoneVerificationService implements PreparePhoneVerificationUseCase
 		if (!StringUtils.hasText(verified.phoneNumber())) {
 			throw new BusinessException(ErrorCode.PHONE_VERIFICATION_FAILED, "본인인증 결과에 휴대폰 번호가 없습니다.");
 		}
+		if (!StringUtils.hasText(verified.name())) {
+			throw new BusinessException(ErrorCode.PHONE_VERIFICATION_FAILED, "본인인증 결과에 이름이 없습니다.");
+		}
 
 		String phoneNumber = normalizePhone(verified.phoneNumber());
+		String name = verified.name().trim();
 		Instant verifiedUntil = Instant.now().plusSeconds(portOneProperties.verifiedTtlSeconds());
-		phoneVerificationStore.markVerified(phoneNumber, verifiedUntil);
+		phoneVerificationStore.markVerified(phoneNumber, name, verifiedUntil);
 
-		return new ConfirmPhoneVerificationResult(true, phoneNumber, maskPhone(phoneNumber));
+		return new ConfirmPhoneVerificationResult(true, phoneNumber, maskPhone(phoneNumber), name);
+	}
+
+	/**
+	 * 본인인증 store의 휴대폰·실명과 요청값이 일치하는지 검증한다.
+	 * 일치 시 store 항목을 반환한다. (저장용 실명은 store 값 = 본인인증 결과)
+	 */
+	public PhoneVerificationStorePort.VerifiedPhone requireMatchingVerified(
+			String requestedPhoneNumber,
+			String requestedName
+	) {
+		String phoneNumber = normalizePhone(requestedPhoneNumber);
+		if (phoneNumber == null || phoneNumber.isBlank()) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST, "휴대폰 번호는 필수입니다.");
+		}
+		if (!StringUtils.hasText(requestedName)) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST, "이름은 필수입니다.");
+		}
+
+		PhoneVerificationStorePort.VerifiedPhone verified = phoneVerificationStore.findVerified(phoneNumber)
+				.orElseThrow(() -> new BusinessException(ErrorCode.PHONE_NOT_VERIFIED));
+
+		if (!normalizeName(verified.name()).equals(normalizeName(requestedName))) {
+			throw new BusinessException(ErrorCode.NAME_MISMATCH);
+		}
+		return verified;
 	}
 
 	public static String normalizePhone(String phoneNumber) {
 		return phoneNumber == null ? null : phoneNumber.replaceAll("[^0-9]", "");
+	}
+
+	public static String normalizeName(String name) {
+		if (name == null) {
+			return "";
+		}
+		return name.trim().replaceAll("\\s+", "");
 	}
 
 	public static String maskPhone(String phoneNumber) {

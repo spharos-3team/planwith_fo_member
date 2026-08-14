@@ -12,37 +12,37 @@ import com.planwith.planwith_fo_member.application.port.out.PhoneVerificationSto
 @Component
 public class InMemoryPhoneVerificationStore implements PhoneVerificationStorePort {
 
-	private final Map<String, Instant> verifiedUntil = new ConcurrentHashMap<>();
+	private final Map<String, VerifiedPhone> verified = new ConcurrentHashMap<>();
 
 	@Override
-	public void markVerified(String phoneNumber, Instant verifiedUntilAt) {
-		verifiedUntil.put(phoneNumber, verifiedUntilAt);
+	public void markVerified(String phoneNumber, String name, Instant verifiedUntilAt) {
+		verified.put(phoneNumber, new VerifiedPhone(phoneNumber, name, verifiedUntilAt));
 	}
 
 	@Override
 	public boolean isVerified(String phoneNumber) {
-		Instant until = verifiedUntil.get(phoneNumber);
-		if (until == null) {
-			return false;
-		}
-		if (until.isBefore(Instant.now())) {
-			verifiedUntil.remove(phoneNumber);
-			return false;
-		}
-		return true;
+		return findVerified(phoneNumber).isPresent();
 	}
 
 	@Override
-	public Optional<String> findVerifiedPhone(String phoneNumber) {
-		return isVerified(phoneNumber) ? Optional.of(phoneNumber) : Optional.empty();
+	public Optional<VerifiedPhone> findVerified(String phoneNumber) {
+		VerifiedPhone entry = verified.get(phoneNumber);
+		if (entry == null) {
+			return Optional.empty();
+		}
+		if (entry.verifiedUntil().isBefore(Instant.now())) {
+			verified.remove(phoneNumber);
+			return Optional.empty();
+		}
+		return Optional.of(entry);
 	}
 
 	@Override
 	public void clear(String phoneNumber) {
-		verifiedUntil.remove(phoneNumber);
+		verified.remove(phoneNumber);
 	}
 
 	public void clearAll() {
-		verifiedUntil.clear();
+		verified.clear();
 	}
 }

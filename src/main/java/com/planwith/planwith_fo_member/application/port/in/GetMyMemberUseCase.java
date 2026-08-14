@@ -14,6 +14,7 @@ public interface GetMyMemberUseCase {
 			UUID memberUuid,
 			String email,
 			String phoneNumber,
+			String name,
 			LoginType loginType,
 			MemberStatus status,
 			Instant createdAt,

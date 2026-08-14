@@ -5,7 +5,7 @@
 > 공통 응답: `ApiResponse<T>`  
 > 호출 경로: `Frontend → Gateway → Member` (Access 검증은 Gateway)
 
-최종 갱신: 2026-08-13 (#10 구현 완료, PR 전)
+최종 갱신: 2026-08-14 (#17 본인인증 실명 저장)
 
 ---
 
@@ -21,6 +21,7 @@
 | ✅ Done | #8 | 소셜 로그인 |
 | ✅ Done | #9 | 아이디 찾기·비밀번호 재설정 |
 | ✅ Done | #10 | 내 회원정보·프로필·약관 동의 |
+| ✅ Done | #17 | 본인인증 실명(`name`) DB·응답 반영 |
 
 ---
 
@@ -33,7 +34,7 @@
 | #1 | GET | `/api/v1/terms` | X | 약관 목록 |
 | #1 | POST | `/api/v1/members` | X | 로컬 회원가입 (201) |
 | #3 | POST | `/api/v1/auth/phone-verifications` | X | 본인인증 준비 (포트원 SDK) |
-| #3 | POST | `/api/v1/auth/phone-verifications/confirm` | X | 본인인증 완료 확인 |
+| #3/#17 | POST | `/api/v1/auth/phone-verifications/confirm` | X | 본인인증 완료 확인 (`phoneNumber` + `name`) |
 | #5 | GET | `/api/v1/members/nicknames/availability` | X | 닉네임 중복확인 (2~10자) |
 | #6 | POST | `/api/v1/auth/{provider}/signup` | X | 소셜 회원가입 (비번 없음, 본인인증·닉네임·약관, 직후 토큰) |
 | #7 | POST | `/api/v1/auth/login` | X | 로컬 로그인 |
@@ -44,7 +45,7 @@
 | #9 | POST | `/api/v1/auth/find-email` | X | 아이디 찾기 (본인인증 휴대폰) |
 | #9 | POST | `/api/v1/auth/password/reset-requests` | X | 비밀번호 재설정 코드 발송 (로컬만) |
 | #9 | POST | `/api/v1/auth/password/reset` | X | 비밀번호 재설정 (204, 로컬만) |
-| #10 | GET | `/api/v1/members/me` | O | 내 회원정보 조회 |
+| #10 | GET | `/api/v1/members/me` | O | 내 회원정보 조회 (`name` 포함) |
 | #10 | PATCH | `/api/v1/members/me` | O | **마이페이지 저장** (휴대폰·닉네임·선택약관·비번) |
 | #10 | PATCH | `/api/v1/members/me/profile` | O | 위와 동일 (별칭) |
 | #10 | DELETE | `/api/v1/members/me` | O | 회원 탈퇴 (soft → `DELETED`) |
@@ -55,7 +56,19 @@
 | #10 | POST | `/api/v1/members/me/agreements` | O | 선택 약관만 단독 변경 (보조) |
 | #10 | PATCH | `/api/v1/members/me/password` | O | 비밀번호만 단독 변경 (보조) |
 | #10 | GET | `/api/v1/members/{memberUuid}/profile` | X | 공개 프로필 |
-| #10 | GET | `/api/v1/members/{memberUuid}` | 내부 | 최소 공개정보 (Gateway Trust) |
+| #10 | GET | `/api/v1/members/{memberUuid}` | 내부 | 최소 공개정보 (Gateway Trust, `name` 포함) |
+
+### 본인인증 실명 (#17)
+
+- `member.name`: 포트원 본인인증 실명만 저장. **DB에는 인증 결과 실명**을 넣고, 가입/휴대폰변경 요청의 `name`은 대조용
+- 로컬·소셜 가입 body에 `name` 필수. 본인인증 store의 휴대폰·실명과 일치하지 않으면 가입 거부
+  - 미인증 → `PHONE_NOT_VERIFIED`
+  - 실명 불일치 → `NAME_MISMATCH`
+- `nickname`: 표시용 닉네임 (기존 그대로)
+- confirm 응답: `verified`, `phoneNumber`, `maskedPhoneNumber`, `name` (FE가 입력란에 채울 수 있음)
+- 휴대폰 변경(`PATCH /members/me`): `phoneNumber` + `name` 함께 보내고 동일 검증
+- stub: `name=테스트사용자`
+- 기존 DB: `ALTER TABLE member ADD COLUMN name varchar(100) NULL;` (`planwith-infra/db/init/10-member-schema.sql`에도 반영)
 
 ### 마이페이지 (#10)
 
@@ -131,9 +144,10 @@ PORTONE_API_BASE_URL=https://api.portone.io
 확인:
 
 1. `POST /api/v1/auth/phone-verifications` → storeId / channelKey / identityVerificationId
-2. FE에서 PortOne SDK로 본인인증 완료
+2. FE에서 PortOne SDK로 본인인증 완료  
+   (로컬 수동 테스트: `http://localhost:8082/portone-identity-test.html` — `src/main/resources/static/`)
 3. `POST /api/v1/auth/phone-verifications/confirm`에 SDK가 준 id 전달 (stub id 형식 사용 금지)
-4. 응답 `phoneNumber` / (가능 시) name 확인
+4. 응답 `phoneNumber` / `name` 확인
 5. 필요 시 포트원 조회 JSON에 `verifiedCustomer.ci` 존재 여부 확인
 
 ### 2) 소셜 OAuth

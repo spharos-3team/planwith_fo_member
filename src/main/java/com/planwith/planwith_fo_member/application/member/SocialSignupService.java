@@ -31,6 +31,7 @@ public class SocialSignupService implements SocialSignupUseCase {
 	private final MemberRepositoryPort memberRepository;
 	private final MemberTermAgreementPort agreementPort;
 	private final PhoneVerificationStorePort phoneVerificationStore;
+	private final PhoneVerificationService phoneVerificationService;
 	private final TermsAgreementService termsAgreementService;
 	private final AuthSessionService authSessionService;
 
@@ -39,6 +40,7 @@ public class SocialSignupService implements SocialSignupUseCase {
 			MemberRepositoryPort memberRepository,
 			MemberTermAgreementPort agreementPort,
 			PhoneVerificationStorePort phoneVerificationStore,
+			PhoneVerificationService phoneVerificationService,
 			TermsAgreementService termsAgreementService,
 			AuthSessionService authSessionService
 	) {
@@ -46,6 +48,7 @@ public class SocialSignupService implements SocialSignupUseCase {
 		this.memberRepository = memberRepository;
 		this.agreementPort = agreementPort;
 		this.phoneVerificationStore = phoneVerificationStore;
+		this.phoneVerificationService = phoneVerificationService;
 		this.termsAgreementService = termsAgreementService;
 		this.authSessionService = authSessionService;
 	}
@@ -57,13 +60,11 @@ public class SocialSignupService implements SocialSignupUseCase {
 		}
 
 		String nickname = command.nickname().trim();
-		String phoneNumber = PhoneVerificationService.normalizePhone(command.phoneNumber());
-		if (phoneNumber == null || phoneNumber.isBlank()) {
-			throw new BusinessException(ErrorCode.INVALID_REQUEST, "휴대폰 번호는 필수입니다.");
-		}
-		if (!phoneVerificationStore.isVerified(phoneNumber)) {
-			throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
-		}
+		PhoneVerificationStorePort.VerifiedPhone verifiedPhone = phoneVerificationService.requireMatchingVerified(
+				command.phoneNumber(),
+				command.name()
+		);
+		String phoneNumber = verifiedPhone.phoneNumber();
 
 		SocialOAuthClientPort.SocialUserProfile socialUser = socialOAuthClient.fetchUser(
 				provider,
@@ -108,6 +109,7 @@ public class SocialSignupService implements SocialSignupUseCase {
 				email,
 				null,
 				phoneNumber,
+				verifiedPhone.name(),
 				socialUser.socialId(),
 				MemberStatus.ACTIVE,
 				createdAt

@@ -12,6 +12,7 @@ public interface LocalSignupUseCase {
 			String email,
 			String password,
 			String phoneNumber,
+			String name,
 			String nickname,
 			String profileImage,
 			String profileIntro,

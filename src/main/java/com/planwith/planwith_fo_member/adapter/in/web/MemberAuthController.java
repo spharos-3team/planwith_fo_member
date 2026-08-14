@@ -177,7 +177,8 @@ public class MemberAuthController {
 		return ResponseEntity.ok(ApiResponse.success(new PhoneVerificationConfirmResponse(
 				result.verified(),
 				result.phoneNumber(),
-				result.maskedPhoneNumber()
+				result.maskedPhoneNumber(),
+				result.name()
 		)));
 	}
 
@@ -298,6 +299,7 @@ public class MemberAuthController {
 				request.profileImage(),
 				request.profileIntro(),
 				request.phoneNumber(),
+				request.name(),
 				request.agreements().stream()
 						.map(item -> new SocialSignupUseCase.AgreementItem(item.termUuid(), Boolean.TRUE.equals(item.agreed())))
 						.toList()
@@ -381,6 +383,7 @@ public class MemberAuthController {
 				request.email(),
 				request.password(),
 				request.phoneNumber(),
+				request.name(),
 				request.nickname(),
 				request.profileImage(),
 				request.profileIntro(),

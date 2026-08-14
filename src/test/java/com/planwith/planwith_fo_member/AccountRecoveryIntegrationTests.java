@@ -128,6 +128,7 @@ class AccountRecoveryIntegrationTests {
 								  "authorizationCode": "stub:kakao-reset:social-reset@example.com",
 								  "nickname": "소셜리셋",
 								  "phoneNumber": "%s",
+								  "name": "테스트사용자",
 								  "agreements": [
 								    {"termUuid": "%s", "agreed": true},
 								    {"termUuid": "%s", "agreed": true}
@@ -154,6 +155,7 @@ class AccountRecoveryIntegrationTests {
 								  "authorizationCode": "stub:google-find:social-find@example.com",
 								  "nickname": "소셜찾기",
 								  "phoneNumber": "%s",
+								  "name": "테스트사용자",
 								  "agreements": [
 								    {"termUuid": "%s", "agreed": true},
 								    {"termUuid": "%s", "agreed": true}
@@ -181,6 +183,7 @@ class AccountRecoveryIntegrationTests {
 								  "email": "%s",
 								  "password": "%s",
 								  "phoneNumber": "%s",
+								  "name": "테스트사용자",
 								  "nickname": "%s",
 								  "agreements": [
 								    {"termUuid": "%s", "agreed": true},

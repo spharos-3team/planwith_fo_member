@@ -18,6 +18,7 @@ public interface SocialSignupUseCase {
 			String profileImage,
 			String profileIntro,
 			String phoneNumber,
+			String name,
 			List<AgreementItem> agreements
 	) {
 	}

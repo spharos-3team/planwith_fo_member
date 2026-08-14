@@ -49,6 +49,7 @@ public class MemberProfileService implements
 
 	private final MemberRepositoryPort memberRepository;
 	private final PhoneVerificationStorePort phoneVerificationStore;
+	private final PhoneVerificationService phoneVerificationService;
 	private final MemberAgreementUseCase memberAgreementUseCase;
 	private final ChangePasswordUseCase changePasswordUseCase;
 	private final GetMyMemberUseCase getMyMemberUseCase;
@@ -56,12 +57,14 @@ public class MemberProfileService implements
 	public MemberProfileService(
 			MemberRepositoryPort memberRepository,
 			PhoneVerificationStorePort phoneVerificationStore,
+			PhoneVerificationService phoneVerificationService,
 			MemberAgreementUseCase memberAgreementUseCase,
 			ChangePasswordUseCase changePasswordUseCase,
 			GetMyMemberUseCase getMyMemberUseCase
 	) {
 		this.memberRepository = memberRepository;
 		this.phoneVerificationStore = phoneVerificationStore;
+		this.phoneVerificationService = phoneVerificationService;
 		this.memberAgreementUseCase = memberAgreementUseCase;
 		this.changePasswordUseCase = changePasswordUseCase;
 		this.getMyMemberUseCase = getMyMemberUseCase;
@@ -92,12 +95,16 @@ public class MemberProfileService implements
 		}
 
 		if (hasPhoneChange) {
-			String phoneNumber = PhoneVerificationService.normalizePhone(command.phoneNumber());
-			if (!phoneVerificationStore.isVerified(phoneNumber)) {
-				throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
-			}
-			memberRepository.updatePhoneNumber(memberUuid, phoneNumber);
-			phoneVerificationStore.clear(phoneNumber);
+			PhoneVerificationStorePort.VerifiedPhone verifiedPhone = phoneVerificationService.requireMatchingVerified(
+					command.phoneNumber(),
+					command.name()
+			);
+			memberRepository.updatePhoneIdentity(
+					memberUuid,
+					verifiedPhone.phoneNumber(),
+					verifiedPhone.name()
+			);
+			phoneVerificationStore.clear(verifiedPhone.phoneNumber());
 		}
 
 		if (hasProfileChange) {

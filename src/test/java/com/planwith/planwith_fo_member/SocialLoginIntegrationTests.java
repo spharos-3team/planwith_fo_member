@@ -75,6 +75,7 @@ class SocialLoginIntegrationTests {
 								  "authorizationCode": "stub:kakao-login-1:kakao-login@example.com",
 								  "nickname": "카카오닉",
 								  "phoneNumber": "%s",
+								  "name": "테스트사용자",
 								  "agreements": [
 								    {"termUuid": "%s", "agreed": true},
 								    {"termUuid": "%s", "agreed": true}

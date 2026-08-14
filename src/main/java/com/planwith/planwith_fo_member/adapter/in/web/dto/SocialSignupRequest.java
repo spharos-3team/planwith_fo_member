@@ -36,6 +36,11 @@ public record SocialSignupRequest(
 		@Size(max = 30, message = "휴대폰 번호는 30자 이하여야 합니다.")
 		String phoneNumber,
 
+		@Schema(example = "홍길동", description = "본인인증 실명과 일치해야 함")
+		@NotBlank(message = "이름은 필수입니다.")
+		@Size(max = 100, message = "이름은 100자 이하여야 합니다.")
+		String name,
+
 		@NotNull(message = "약관 동의 목록은 필수입니다.")
 		@Valid
 		List<AgreementRequest> agreements

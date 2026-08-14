@@ -12,6 +12,7 @@ public interface UpdateMyPageUseCase {
 
 	record UpdateMyPageCommand(
 			String phoneNumber,
+			String name,
 			String nickname,
 			String profileImage,
 			String profileIntro,

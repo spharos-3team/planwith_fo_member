@@ -29,6 +29,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 	private final MemberTermAgreementPort agreementPort;
 	private final EmailVerificationStorePort verificationStore;
 	private final PhoneVerificationStorePort phoneVerificationStore;
+	private final PhoneVerificationService phoneVerificationService;
 	private final TermsAgreementService termsAgreementService;
 	private final PasswordEncoder passwordEncoder;
 
@@ -37,6 +38,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 			MemberTermAgreementPort agreementPort,
 			EmailVerificationStorePort verificationStore,
 			PhoneVerificationStorePort phoneVerificationStore,
+			PhoneVerificationService phoneVerificationService,
 			TermsAgreementService termsAgreementService,
 			PasswordEncoder passwordEncoder
 	) {
@@ -44,6 +46,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 		this.agreementPort = agreementPort;
 		this.verificationStore = verificationStore;
 		this.phoneVerificationStore = phoneVerificationStore;
+		this.phoneVerificationService = phoneVerificationService;
 		this.termsAgreementService = termsAgreementService;
 		this.passwordEncoder = passwordEncoder;
 	}
@@ -52,17 +55,17 @@ public class LocalSignupService implements LocalSignupUseCase {
 	public LocalSignupResult signup(LocalSignupCommand command) {
 		String email = command.email().trim().toLowerCase();
 		String nickname = command.nickname().trim();
-		String phoneNumber = PhoneVerificationService.normalizePhone(command.phoneNumber());
 
 		if (!verificationStore.isVerified(email)) {
 			throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
 		}
-		if (phoneNumber == null || phoneNumber.isBlank()) {
-			throw new BusinessException(ErrorCode.INVALID_REQUEST, "휴대폰 번호는 필수입니다.");
-		}
-		if (!phoneVerificationStore.isVerified(phoneNumber)) {
-			throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED);
-		}
+
+		PhoneVerificationStorePort.VerifiedPhone verifiedPhone = phoneVerificationService.requireMatchingVerified(
+				command.phoneNumber(),
+				command.name()
+		);
+		String phoneNumber = verifiedPhone.phoneNumber();
+
 		if (memberRepository.existsByEmail(email)) {
 			throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
 		}
@@ -85,6 +88,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 				email,
 				passwordEncoder.encode(command.password()),
 				phoneNumber,
+				verifiedPhone.name(),
 				null,
 				MemberStatus.ACTIVE,
 				createdAt

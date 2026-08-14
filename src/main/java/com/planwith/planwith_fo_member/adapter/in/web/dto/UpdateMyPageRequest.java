@@ -14,6 +14,9 @@ public record UpdateMyPageRequest(
 		@Size(max = 30, message = "휴대폰 번호는 30자 이하여야 합니다.")
 		String phoneNumber,
 
+		@Size(max = 100, message = "이름은 100자 이하여야 합니다.")
+		String name,
+
 		@Size(min = 2, max = 10, message = "닉네임은 2자 이상 10자 이하여야 합니다.")
 		String nickname,
 

@@ -11,6 +11,7 @@ public class Member {
 	private final String email;
 	private final String passwordHash;
 	private final String phoneNumber;
+	private final String name;
 	private final String socialId;
 	private final MemberStatus status;
 	private final Instant createdAt;
@@ -23,11 +24,12 @@ public class Member {
 			String email,
 			String passwordHash,
 			String phoneNumber,
+			String name,
 			String socialId,
 			MemberStatus status,
 			Instant createdAt
 	) {
-		this(memberId, memberUuid, loginType, email, passwordHash, phoneNumber, socialId, status, createdAt, null);
+		this(memberId, memberUuid, loginType, email, passwordHash, phoneNumber, name, socialId, status, createdAt, null);
 	}
 
 	public Member(
@@ -37,6 +39,7 @@ public class Member {
 			String email,
 			String passwordHash,
 			String phoneNumber,
+			String name,
 			String socialId,
 			MemberStatus status,
 			Instant createdAt,
@@ -48,6 +51,7 @@ public class Member {
 		this.email = email;
 		this.passwordHash = passwordHash;
 		this.phoneNumber = phoneNumber;
+		this.name = name;
 		this.socialId = socialId;
 		this.status = status;
 		this.createdAt = createdAt;
@@ -76,6 +80,10 @@ public class Member {
 
 	public String getPhoneNumber() {
 		return phoneNumber;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public String getSocialId() {

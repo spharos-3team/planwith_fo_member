@@ -180,6 +180,7 @@ public class MemberMeController {
 				result.memberUuid(),
 				result.email(),
 				result.phoneNumber(),
+				result.name(),
 				result.loginType(),
 				result.status(),
 				result.createdAt()
@@ -197,6 +198,7 @@ public class MemberMeController {
 						.toList();
 		return new UpdateMyPageUseCase.UpdateMyPageCommand(
 				request.phoneNumber(),
+				request.name(),
 				request.nickname(),
 				request.profileImage(),
 				request.profileIntro(),
@@ -233,6 +235,7 @@ public class MemberMeController {
 				result.memberUuid(),
 				result.email(),
 				result.phoneNumber(),
+				result.name(),
 				result.loginType(),
 				result.status(),
 				result.createdAt(),
