@@ -23,4 +23,9 @@ class ErrorCodeTest {
 		assertThat(ErrorCode.REQUIRED_TERM_NOT_MODIFIABLE.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(ErrorCode.INVALID_PROFILE_IMAGE.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
+
+	@Test
+	void emailSendFailedUsesHttp500() {
+		assertThat(ErrorCode.EMAIL_SEND_FAILED.status()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+	}
 }

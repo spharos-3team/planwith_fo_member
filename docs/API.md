@@ -6,7 +6,7 @@
 > 공통 응답: `ApiResponse<T>`  
 > 호출 경로: `Frontend → Gateway(:8000) → Member(:8082)` (Access 검증은 Gateway)
 
-최종 갱신: 2026-08-14 (#17 본인인증 실명 저장)
+최종 갱신: 2026-08-18 (#25 본인인증 스텁 입력·이메일 실발송)
 
 ---
 
@@ -23,6 +23,7 @@
 | ✅ Done | #9 | 아이디 찾기·비밀번호 재설정 |
 | ✅ Done | #10 | 내 회원정보·프로필·약관 동의 |
 | ✅ Done | #17 | 본인인증 실명(`name`) DB·응답 반영 |
+| ✅ Done | #25 | 본인인증 스텁 휴대폰·실명 지정 / 이메일 SMTP 실발송 |
 
 ---
 
@@ -68,7 +69,7 @@
 - `nickname`: 표시용 닉네임 (기존 그대로)
 - confirm 응답: `verified`, `phoneNumber`, `maskedPhoneNumber`, `name` (FE가 입력란에 채울 수 있음)
 - 휴대폰 변경(`PATCH /members/me`): `phoneNumber` + `name` 함께 보내고 동일 검증
-- stub: `name=테스트사용자`
+- stub: confirm/prepare에 `phoneNumber`·`name`을 넣으면 그 값 사용. 생략 시 `name=테스트사용자`, 번호는 `identity-verification-stub-{phone}` 끝자리
 - 기존 DB: `ALTER TABLE member ADD COLUMN name varchar(100) NULL;` (`planwith-infra/db/init/10-member-schema.sql`에도 반영)
 
 ### 마이페이지 (#10)
@@ -90,7 +91,7 @@
 
 - 아이디 찾기: 본인인증 confirm 후 `phoneNumber`로 조회 → `email` / `maskedEmail` / `loginType`
 - 비밀번호 재설정: **로컬 회원만**. 소셜 계정 → `PASSWORD_RESET_NOT_ALLOWED_FOR_SOCIAL`
-- 재설정 코드: 이메일 로그 스텁 (`LoggingEmailSender`)
+- 재설정 코드: `EMAIL_STUB_ENABLED=true`면 로그, `false`면 SMTP
 
 ### 토큰 계약 (#7/#8)
 
@@ -124,9 +125,9 @@
 
 | 구분 | 환경변수 | 기본 | stub 동작 | 실연동 |
 | --- | --- | --- | --- | --- |
-| 포트원 본인인증 | `PORTONE_STUB_ENABLED` | `true` | id=`identity-verification-stub-{phone}` | 포트원 SDK + API |
+| 포트원 본인인증 | `PORTONE_STUB_ENABLED` | `true` | id=`identity-verification-stub-{phone}` + optional `phoneNumber`/`name` | 포트원 SDK + API |
 | 소셜 OAuth | `SOCIAL_STUB_ENABLED` | `true` | code=`stub:{socialId}:{email}` | 실제 authorization code |
-| 이메일 발송 | (없음) | 로그 | `LoggingEmailSender` | SMTP 등 미구현 |
+| 이메일 발송 | `EMAIL_STUB_ENABLED` | `true` | `LoggingEmailSender` (서버 로그) | SMTP (`MAIL_*`) |
 | JWT 키 | `JWT_*_KEY_PATH` 비움 | ephemeral | 재시작 시 키 변경 가능 | PEM 경로 지정 |
 | Gateway Trust | `GATEWAY_TRUST_CHECK_ENABLED` | `false` | Header `X-Auth-User-Id` 직접 | Gateway + `GATEWAY_INTERNAL_TOKEN` |
 
@@ -144,10 +145,11 @@ PORTONE_API_BASE_URL=https://api.portone.io
 
 확인:
 
-1. `POST /api/v1/auth/phone-verifications` → storeId / channelKey / identityVerificationId
+1. `POST /api/v1/auth/phone-verifications` → storeId / channelKey / identityVerificationId  
+   스텁이면 body에 `phoneNumber`/`name`을 넣을 수 있다.
 2. FE에서 PortOne SDK로 본인인증 완료  
    (로컬 수동 테스트: `http://localhost:8082/portone-identity-test.html` — `src/main/resources/static/`)
-3. `POST /api/v1/auth/phone-verifications/confirm`에 SDK가 준 id 전달 (stub id 형식 사용 금지)
+3. `POST /api/v1/auth/phone-verifications/confirm`에 SDK가 준 id 전달 (스텁은 `identity-verification-stub-{phone}` + `phoneNumber`/`name`)
 4. 응답 `phoneNumber` / `name` 확인
 5. 필요 시 포트원 조회 JSON에 `verifiedCustomer.ci` 존재 여부 확인
 
@@ -169,10 +171,23 @@ NAVER_CLIENT_SECRET=...
 2. `POST /api/v1/auth/{provider}/login` 또는 `signup`에 실제 code 전달
 3. `stub:...` 코드를 넣으면 실패해야 정상
 
-### 3) 이메일 (현재 stub만)
+### 3) 이메일
 
-스위치 없음. 인증번호·비번 재설정 코드는 **서버 로그**에서 확인.  
-실메일 발송은 SMTP/SES 등 추가 연동 전까지 불가.
+```env
+EMAIL_STUB_ENABLED=false
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your@gmail.com
+MAIL_PASSWORD=app-password
+MAIL_FROM=your@gmail.com
+```
+
+확인:
+
+1. `POST /api/v1/auth/email-verifications` 에 실제 수신 가능한 이메일
+2. 메일함에서 6자리 코드 확인 (API 응답·로그에 코드 없음)
+3. `POST /api/v1/auth/email-verifications/confirm` 에 그 코드 전달
+4. `EMAIL_STUB_ENABLED=true`면 이전처럼 서버 로그에 코드가 남는다
 
 ### 4) JWT
 

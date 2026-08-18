@@ -16,6 +16,15 @@ spring:
           time_zone: UTC
   jackson:
     time-zone: UTC
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
 
 server:
   address: ${SERVER_ADDRESS:0.0.0.0}
@@ -82,6 +91,10 @@ app:
     code-ttl-seconds: ${EMAIL_VERIFICATION_CODE_TTL_SECONDS:600}
     verified-ttl-seconds: ${EMAIL_VERIFICATION_VERIFIED_TTL_SECONDS:1800}
     code-length: ${EMAIL_VERIFICATION_CODE_LENGTH:6}
+  email:
+    # true: 서버 로그에 코드 출력 (테스트/로컬 기본). false: SMTP 실발송.
+    stub-enabled: ${EMAIL_STUB_ENABLED:true}
+    from: ${MAIL_FROM:}
   portone:
     # 로컬 스텁 기본값. 실연동 시 PORTONE_* 환경변수로 덮어쓴다.
     store-id: ${PORTONE_STORE_ID:store-local-stub}

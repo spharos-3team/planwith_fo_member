@@ -2,11 +2,13 @@ package com.planwith.planwith_fo_member.adapter.out.mail;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.planwith.planwith_fo_member.application.port.out.EmailSenderPort;
 
 @Component
+@ConditionalOnProperty(prefix = "app.email", name = "stub-enabled", havingValue = "true", matchIfMissing = true)
 public class LoggingEmailSender implements EmailSenderPort {
 
 	private static final Logger log = LoggerFactory.getLogger(LoggingEmailSender.class);
@@ -14,5 +16,10 @@ public class LoggingEmailSender implements EmailSenderPort {
 	@Override
 	public void sendVerificationCode(String email, String code) {
 		log.info("Email verification code for {}: {}", email, code);
+	}
+
+	@Override
+	public void sendPasswordResetCode(String email, String code) {
+		log.info("Password reset code for {}: {}", email, code);
 	}
 }
