@@ -1,9 +1,10 @@
 # Member API 진행 현황
 
 > 이슈 완료마다 이 문서를 갱신한다.  
-> Swagger: `http://localhost:8082/swagger-ui/index.html`  
+> Swagger (로컬 bootRun): `http://localhost:8082/swagger-ui/index.html`  
+> Swagger (다른 PC / Docker): `http://{SERVER_IP}:8000/swagger-ui.html` → `planwith-fo-member`  
 > 공통 응답: `ApiResponse<T>`  
-> 호출 경로: `Frontend → Gateway → Member` (Access 검증은 Gateway)
+> 호출 경로: `Frontend → Gateway(:8000) → Member(:8082)` (Access 검증은 Gateway)
 
 최종 갱신: 2026-08-14 (#17 본인인증 실명 저장)
 

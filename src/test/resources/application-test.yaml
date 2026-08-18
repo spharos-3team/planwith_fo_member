@@ -31,6 +31,7 @@ app:
   gateway:
     internal-token: test-gateway-token
     trust-check-enabled: false
+    public-url: /
   email-verification:
     code-ttl-seconds: 600
     verified-ttl-seconds: 1800
