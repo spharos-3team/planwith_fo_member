@@ -18,5 +18,7 @@
       SERVER_PORT: 8082
       SERVER_ADDRESS: 0.0.0.0
       SPRING_APPLICATION_NAME: planwith-fo-member
+      EUREKA_CLIENT_ENABLED: "true"
+      EUREKA_DEFAULT_ZONE: ${EUREKA_DEFAULT_ZONE:-http://discovery:8761/eureka/}
     networks:
       - planwith-net
