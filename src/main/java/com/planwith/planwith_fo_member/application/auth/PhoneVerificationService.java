@@ -1,6 +1,7 @@
 package com.planwith.planwith_fo_member.application.auth;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import com.planwith.planwith_fo_member.application.port.in.ConfirmPhoneVerificat
 import com.planwith.planwith_fo_member.application.port.in.PreparePhoneVerificationUseCase;
 import com.planwith.planwith_fo_member.application.port.out.IdentityVerificationClientPort;
 import com.planwith.planwith_fo_member.application.port.out.PhoneVerificationStorePort;
+import com.planwith.planwith_fo_member.application.port.out.StubIdentityDraftPort;
 import com.planwith.planwith_fo_member.config.PortOneProperties;
 
 @Service
@@ -20,23 +22,27 @@ public class PhoneVerificationService implements PreparePhoneVerificationUseCase
 	private final IdentityVerificationClientPort identityVerificationClient;
 	private final PhoneVerificationStorePort phoneVerificationStore;
 	private final PortOneProperties portOneProperties;
+	private final Optional<StubIdentityDraftPort> stubIdentityDraft;
 
 	public PhoneVerificationService(
 			IdentityVerificationClientPort identityVerificationClient,
 			PhoneVerificationStorePort phoneVerificationStore,
-			PortOneProperties portOneProperties
+			PortOneProperties portOneProperties,
+			Optional<StubIdentityDraftPort> stubIdentityDraft
 	) {
 		this.identityVerificationClient = identityVerificationClient;
 		this.phoneVerificationStore = phoneVerificationStore;
 		this.portOneProperties = portOneProperties;
+		this.stubIdentityDraft = stubIdentityDraft;
 	}
 
 	@Override
-	public PreparePhoneVerificationResult prepare() {
+	public PreparePhoneVerificationResult prepare(String stubPhoneNumber, String stubName) {
 		if (!StringUtils.hasText(portOneProperties.storeId()) || !StringUtils.hasText(portOneProperties.channelKey())) {
 			throw new BusinessException(ErrorCode.IDENTITY_VERIFICATION_CONFIG_MISSING);
 		}
 		String identityVerificationId = "identity-verification-" + UUID.randomUUID();
+		stubIdentityDraft.ifPresent(port -> port.remember(identityVerificationId, stubPhoneNumber, stubName));
 		return new PreparePhoneVerificationResult(
 				portOneProperties.storeId(),
 				portOneProperties.channelKey(),
@@ -45,13 +51,13 @@ public class PhoneVerificationService implements PreparePhoneVerificationUseCase
 	}
 
 	@Override
-	public ConfirmPhoneVerificationResult confirm(String identityVerificationId) {
+	public ConfirmPhoneVerificationResult confirm(String identityVerificationId, String stubPhoneNumber, String stubName) {
 		if (!StringUtils.hasText(identityVerificationId)) {
 			throw new BusinessException(ErrorCode.INVALID_REQUEST, "identityVerificationId는 필수입니다.");
 		}
 
 		IdentityVerificationClientPort.VerifiedIdentity verified =
-				identityVerificationClient.fetchVerified(identityVerificationId.trim());
+				identityVerificationClient.fetchVerified(identityVerificationId.trim(), stubPhoneNumber, stubName);
 
 		if (!verified.isVerified()) {
 			throw new BusinessException(ErrorCode.PHONE_VERIFICATION_FAILED);

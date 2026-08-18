@@ -61,7 +61,7 @@ public class PasswordResetService implements RequestPasswordResetUseCase, ResetP
 		String code = generateCode(properties.codeLength());
 		Instant expiresAt = Instant.now().plusSeconds(properties.codeTtlSeconds());
 		passwordResetStore.saveCode(normalized, code, expiresAt);
-		emailSender.sendVerificationCode(normalized, code);
+		emailSender.sendPasswordResetCode(normalized, code);
 
 		return new RequestPasswordResetResult(
 				normalized,

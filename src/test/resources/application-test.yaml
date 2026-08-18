@@ -36,6 +36,9 @@ app:
     code-ttl-seconds: 600
     verified-ttl-seconds: 1800
     code-length: 6
+  email:
+    stub-enabled: true
+    from:
   portone:
     store-id: store-test
     channel-key: channel-key-test

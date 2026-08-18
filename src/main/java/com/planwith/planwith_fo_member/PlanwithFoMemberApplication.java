@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 import com.planwith.planwith_fo_member.config.AuthProperties;
 import com.planwith.planwith_fo_member.config.DeployProperties;
+import com.planwith.planwith_fo_member.config.EmailProperties;
 import com.planwith.planwith_fo_member.config.EmailVerificationProperties;
 import com.planwith.planwith_fo_member.config.GatewayTrustProperties;
 import com.planwith.planwith_fo_member.config.JwtProperties;
@@ -17,6 +18,7 @@ import com.planwith.planwith_fo_member.config.SocialOAuthProperties;
 @EnableConfigurationProperties({
 		AuthProperties.class,
 		DeployProperties.class,
+		EmailProperties.class,
 		EmailVerificationProperties.class,
 		PortOneProperties.class,
 		SocialOAuthProperties.class,

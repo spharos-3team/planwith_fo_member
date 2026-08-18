@@ -16,6 +16,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.jayway.jsonpath.JsonPath;
+
 import com.planwith.planwith_fo_member.adapter.out.persistence.terms.TermsJpaEntity;
 import com.planwith.planwith_fo_member.adapter.out.persistence.terms.TermsJpaRepository;
 import com.planwith.planwith_fo_member.adapter.out.verification.InMemoryEmailVerificationStore;
@@ -74,6 +76,81 @@ class MemberSignupIntegrationTests {
 				.andExpect(jsonPath("$.data.storeId").value("store-test"))
 				.andExpect(jsonPath("$.data.channelKey").value("channel-key-test"))
 				.andExpect(jsonPath("$.data.identityVerificationId").isNotEmpty());
+	}
+
+	@Test
+	void confirmPhoneVerificationAcceptsStubPhoneAndName() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/phone-verifications/confirm")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "identityVerificationId": "identity-verification-stub-01055556666",
+								  "phoneNumber": "01055556666",
+								  "name": "홍길동"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.verified").value(true))
+				.andExpect(jsonPath("$.data.phoneNumber").value("01055556666"))
+				.andExpect(jsonPath("$.data.name").value("홍길동"));
+	}
+
+	@Test
+	void prepareThenConfirmUsesStubPhoneAndName() throws Exception {
+		String body = mockMvc.perform(post("/api/v1/auth/phone-verifications")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"phoneNumber": "01077778888", "name": "김플랜"}
+								"""))
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+		String identityVerificationId = JsonPath.read(body, "$.data.identityVerificationId");
+
+		mockMvc.perform(post("/api/v1/auth/phone-verifications/confirm")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"identityVerificationId": "%s"}
+								""".formatted(identityVerificationId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.phoneNumber").value("01077778888"))
+				.andExpect(jsonPath("$.data.name").value("김플랜"));
+	}
+
+	@Test
+	void signupSucceedsWithCustomVerifiedName() throws Exception {
+		String email = "custom-name@example.com";
+		String phone = "01055556666";
+		verifyEmail(email);
+		mockMvc.perform(post("/api/v1/auth/phone-verifications/confirm")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "identityVerificationId": "identity-verification-stub-%s",
+								  "phoneNumber": "%s",
+								  "name": "홍길동"
+								}
+								""".formatted(phone, phone)))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/v1/members")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "email": "%s",
+								  "password": "Password1!",
+								  "phoneNumber": "%s",
+								  "name": "홍길동",
+								  "nickname": "커스텀이름",
+								  "agreements": [
+								    {"termUuid": "%s", "agreed": true},
+								    {"termUuid": "%s", "agreed": true}
+								  ]
+								}
+								""".formatted(email, phone, SERVICE_TERM, PRIVACY_TERM)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.data.nickname").value("커스텀이름"));
 	}
 
 	@Test

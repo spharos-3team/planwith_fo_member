@@ -33,6 +33,7 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.PasswordResetRequestDt
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PasswordResetRequestResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationConfirmResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationPrepareRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.PhoneVerificationPrepareResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialLoginRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.SocialLoginResponse;
@@ -133,7 +134,10 @@ public class MemberAuthController {
 	}
 
 	@PostMapping("/auth/email-verifications")
-	@Operation(summary = "이메일 인증번호 발송")
+	@Operation(summary = "이메일 인증번호 발송", description = """
+			EMAIL_STUB_ENABLED=true(기본)이면 서버 로그에 코드가 남고, false이면 SMTP로 메일을 보낸다.
+			응답에는 인증번호를 포함하지 않는다. 메일(또는 로그)에서 코드를 확인한 뒤 confirm에 넣는다.
+			""")
 	public ResponseEntity<ApiResponse<EmailVerificationSendResponse>> sendEmailVerification(
 			@Valid @RequestBody EmailVerificationSendRequest request
 	) {
@@ -146,7 +150,7 @@ public class MemberAuthController {
 	}
 
 	@PostMapping("/auth/email-verifications/confirm")
-	@Operation(summary = "이메일 인증번호 확인")
+	@Operation(summary = "이메일 인증번호 확인", description = "메일(또는 스텁 로그)에서 받은 6자리 코드를 넣는다.")
 	public ResponseEntity<ApiResponse<EmailVerificationConfirmResponse>> confirmEmailVerification(
 			@Valid @RequestBody EmailVerificationConfirmRequest request
 	) {
@@ -158,9 +162,19 @@ public class MemberAuthController {
 	}
 
 	@PostMapping("/auth/phone-verifications")
-	@Operation(summary = "본인인증 요청 준비 (포트원 SDK용 storeId/channelKey/identityVerificationId 발급)")
-	public ResponseEntity<ApiResponse<PhoneVerificationPrepareResponse>> preparePhoneVerification() {
-		var result = preparePhoneVerificationUseCase.prepare();
+	@Operation(summary = "본인인증 요청 준비 (포트원 SDK용 storeId/channelKey/identityVerificationId 발급)", description = """
+			응답의 identityVerificationId를 confirm에 그대로 넣는다.
+
+			스텁(PORTONE_STUB_ENABLED=true, 기본): body에 phoneNumber/name을 넣으면 그 값으로 인증된다.
+			실연동: body는 비우고, 받은 id로 포트원 SDK 본인인증을 끝낸 뒤 confirm한다.
+			""")
+	public ResponseEntity<ApiResponse<PhoneVerificationPrepareResponse>> preparePhoneVerification(
+			@Valid @RequestBody(required = false) PhoneVerificationPrepareRequest request
+	) {
+		var result = preparePhoneVerificationUseCase.prepare(
+				request == null ? null : request.phoneNumber(),
+				request == null ? null : request.name()
+		);
 		return ResponseEntity.ok(ApiResponse.success(new PhoneVerificationPrepareResponse(
 				result.storeId(),
 				result.channelKey(),
@@ -169,11 +183,30 @@ public class MemberAuthController {
 	}
 
 	@PostMapping("/auth/phone-verifications/confirm")
-	@Operation(summary = "본인인증 완료 확인 (포트원 서버 조회)")
+	@Operation(summary = "본인인증 완료 확인 (포트원 서버 조회)", description = """
+			### 스텁 (기본)
+			예시:
+			```
+			{
+			  "identityVerificationId": "identity-verification-stub-01012345678",
+			  "phoneNumber": "01012345678",
+			  "name": "홍길동"
+			}
+			```
+			prepare에서 phoneNumber/name을 넣었다면 identityVerificationId만 넣어도 된다.
+			가입 시 name은 여기서 나온 실명과 같아야 한다.
+
+			### 실연동
+			prepare → 포트원 SDK → 이 API에는 identityVerificationId만 전달. phoneNumber/name은 무시된다.
+			""")
 	public ResponseEntity<ApiResponse<PhoneVerificationConfirmResponse>> confirmPhoneVerification(
 			@Valid @RequestBody PhoneVerificationConfirmRequest request
 	) {
-		var result = confirmPhoneVerificationUseCase.confirm(request.identityVerificationId());
+		var result = confirmPhoneVerificationUseCase.confirm(
+				request.identityVerificationId(),
+				request.phoneNumber(),
+				request.name()
+		);
 		return ResponseEntity.ok(ApiResponse.success(new PhoneVerificationConfirmResponse(
 				result.verified(),
 				result.phoneNumber(),
