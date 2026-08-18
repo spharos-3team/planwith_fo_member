@@ -21,6 +21,15 @@ server:
   address: ${SERVER_ADDRESS:0.0.0.0}
   port: ${SERVER_PORT:8082}
 
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    # Docker/서버는 Gateway Swagger(:8000)를 쓴다. 로컬 bootRun 기본은 활성.
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
+    path: /swagger-ui.html
+
 eureka:
   client:
     # 로컬 단독 실행 기본 off. Docker/서버는 EUREKA_CLIENT_ENABLED=true
@@ -62,6 +71,9 @@ app:
     # 로컬 단독(local-direct) 기본 off. Gateway 경유 운영은 true + GATEWAY_INTERNAL_TOKEN
     internal-token: ${GATEWAY_INTERNAL_TOKEN:}
     trust-check-enabled: ${GATEWAY_TRUST_CHECK_ENABLED:false}
+    # Relative "/" avoids embedding Docker hostname / LAN IP in OpenAPI servers.
+    # Swagger Try-it-out then uses the browser origin (Gateway :8000).
+    public-url: ${GATEWAY_PUBLIC_URL:/}
   deploy:
     marker: ${DEPLOY_MARKER:planwith-fo-member-deploy-v1}
   email-verification:

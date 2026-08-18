@@ -21,8 +21,11 @@ export PATH="$JAVA_HOME/bin:$PATH"
 ./gradlew bootRun
 ```
 
-- Swagger UI: `http://localhost:8082/swagger-ui/index.html`
+- Swagger UI (로컬 bootRun): `http://localhost:8082/swagger-ui/index.html`
+- Swagger UI (다른 PC / Docker): `http://{SERVER_IP}:8000/swagger-ui.html` → `planwith-fo-member`
 - API 진행·완료/미완료 목록: **[docs/API.md](docs/API.md)** (이슈 끝날 때마다 갱신)
+
+다른 PC는 member `:8082`를 직접 호출하지 않는다. 경로는 `Frontend/브라우저 → Gateway :8000 → Eureka → planwith-fo-member:8082` 이다.
 
 ## 검증
 
