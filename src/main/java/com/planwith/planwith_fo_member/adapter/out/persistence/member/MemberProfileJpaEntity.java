@@ -28,6 +28,12 @@ public class MemberProfileJpaEntity {
 	@Column(name = "grade", nullable = false, length = 30)
 	private String grade;
 
+	@Column(name = "profile_badge", nullable = false)
+	private boolean profileBadge;
+
+	@Column(name = "profile_special_border", nullable = false)
+	private boolean profileSpecialBorder;
+
 	public Long getMemberId() {
 		return memberId;
 	}
@@ -74,5 +80,21 @@ public class MemberProfileJpaEntity {
 
 	public void setGrade(String grade) {
 		this.grade = grade;
+	}
+
+	public boolean isProfileBadge() {
+		return profileBadge;
+	}
+
+	public void setProfileBadge(boolean profileBadge) {
+		this.profileBadge = profileBadge;
+	}
+
+	public boolean isProfileSpecialBorder() {
+		return profileSpecialBorder;
+	}
+
+	public void setProfileSpecialBorder(boolean profileSpecialBorder) {
+		this.profileSpecialBorder = profileSpecialBorder;
 	}
 }

@@ -3,6 +3,7 @@ package com.planwith.planwith_fo_member.adapter.out.persistence.follow;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -20,9 +21,14 @@ import com.planwith.planwith_fo_member.domain.member.MemberProfile;
 public class FollowPersistenceAdapter implements FollowRepositoryPort {
 
 	private final FollowJpaRepository followJpaRepository;
+	private final FollowSourceVersionJpaRepository followSourceVersionJpaRepository;
 
-	public FollowPersistenceAdapter(FollowJpaRepository followJpaRepository) {
+	public FollowPersistenceAdapter(
+			FollowJpaRepository followJpaRepository,
+			FollowSourceVersionJpaRepository followSourceVersionJpaRepository
+	) {
 		this.followJpaRepository = followJpaRepository;
+		this.followSourceVersionJpaRepository = followSourceVersionJpaRepository;
 	}
 
 	@Override
@@ -50,6 +56,31 @@ public class FollowPersistenceAdapter implements FollowRepositoryPort {
 				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 		entity.setActive(active);
 		return toDomain(followJpaRepository.save(entity));
+	}
+
+	@Override
+	public long nextSourceVersion(UUID followeeMemberUuid) {
+		String followeeUuid = followeeMemberUuid.toString();
+		FollowSourceVersionJpaEntity entity = followSourceVersionJpaRepository
+				.findByFolloweeMemberUuidForUpdate(followeeUuid)
+				.orElse(null);
+		if (entity == null) {
+			try {
+				FollowSourceVersionJpaEntity created = new FollowSourceVersionJpaEntity();
+				created.setFolloweeMemberUuid(followeeUuid);
+				created.setSourceVersion(1L);
+				followSourceVersionJpaRepository.saveAndFlush(created);
+				return 1L;
+			}
+			catch (DataIntegrityViolationException exception) {
+				entity = followSourceVersionJpaRepository.findByFolloweeMemberUuidForUpdate(followeeUuid)
+						.orElseThrow(() -> exception);
+			}
+		}
+		long next = entity.getSourceVersion() + 1;
+		entity.setSourceVersion(next);
+		followSourceVersionJpaRepository.save(entity);
+		return next;
 	}
 
 	@Override
@@ -118,7 +149,9 @@ public class FollowPersistenceAdapter implements FollowRepositoryPort {
 				entity.getNickname(),
 				entity.getProfileImage(),
 				entity.getProfileIntro(),
-				entity.getGrade()
+				entity.getGrade(),
+				entity.isProfileBadge(),
+				entity.isProfileSpecialBorder()
 		);
 	}
 }

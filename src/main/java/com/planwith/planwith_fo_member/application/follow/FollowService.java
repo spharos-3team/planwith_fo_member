@@ -35,10 +35,16 @@ public class FollowService implements
 
 	private final FollowRepositoryPort followRepository;
 	private final MemberRepositoryPort memberRepository;
+	private final FollowEventPublisher followEventPublisher;
 
-	public FollowService(FollowRepositoryPort followRepository, MemberRepositoryPort memberRepository) {
+	public FollowService(
+			FollowRepositoryPort followRepository,
+			MemberRepositoryPort memberRepository,
+			FollowEventPublisher followEventPublisher
+	) {
 		this.followRepository = followRepository;
 		this.memberRepository = memberRepository;
+		this.followEventPublisher = followEventPublisher;
 	}
 
 	@Override
@@ -52,7 +58,7 @@ public class FollowService implements
 		return followRepository.findByPair(followerMemberUuid, followeeMemberUuid)
 				.map(existing -> existing.isActive()
 						? toResult(existing)
-						: toResult(followRepository.updateActive(existing.getFollowId(), true)))
+						: toResult(activateAndPublish(existing)))
 				.orElseGet(() -> createFollow(followerMemberUuid, followeeMemberUuid));
 	}
 
@@ -62,7 +68,10 @@ public class FollowService implements
 		requireActiveMember(followeeMemberUuid);
 		followRepository.findByPair(followerMemberUuid, followeeMemberUuid)
 				.filter(Follow::isActive)
-				.ifPresent(existing -> followRepository.updateActive(existing.getFollowId(), false));
+				.ifPresent(existing -> {
+					Follow deactivated = followRepository.updateActive(existing.getFollowId(), false);
+					publishRemoved(deactivated);
+				});
 	}
 
 	@Override
@@ -91,7 +100,9 @@ public class FollowService implements
 
 	private FollowResult createFollow(UUID followerMemberUuid, UUID followeeMemberUuid) {
 		try {
-			return toResult(followRepository.save(Follow.create(followerMemberUuid, followeeMemberUuid)));
+			Follow saved = followRepository.save(Follow.create(followerMemberUuid, followeeMemberUuid));
+			publishCreated(saved);
+			return toResult(saved);
 		}
 		catch (DataIntegrityViolationException exception) {
 			Follow existing = followRepository.findByPair(followerMemberUuid, followeeMemberUuid)
@@ -99,8 +110,24 @@ public class FollowService implements
 			if (existing.isActive()) {
 				return toResult(existing);
 			}
-			return toResult(followRepository.updateActive(existing.getFollowId(), true));
+			return toResult(activateAndPublish(existing));
 		}
+	}
+
+	private Follow activateAndPublish(Follow existing) {
+		Follow activated = followRepository.updateActive(existing.getFollowId(), true);
+		publishCreated(activated);
+		return activated;
+	}
+
+	private void publishCreated(Follow follow) {
+		long sourceVersion = followRepository.nextSourceVersion(follow.getFolloweeMemberUuid());
+		followEventPublisher.publishCreated(follow, sourceVersion);
+	}
+
+	private void publishRemoved(Follow follow) {
+		long sourceVersion = followRepository.nextSourceVersion(follow.getFolloweeMemberUuid());
+		followEventPublisher.publishRemoved(follow, sourceVersion);
 	}
 
 	private void requireActiveMember(UUID memberUuid) {
@@ -131,7 +158,9 @@ public class FollowService implements
 				profile.getNickname(),
 				profile.getProfileImage(),
 				profile.getProfileIntro(),
-				profile.getGrade()
+				profile.getGrade(),
+				profile.isProfileBadge(),
+				profile.isProfileSpecialBorder()
 		);
 	}
 
