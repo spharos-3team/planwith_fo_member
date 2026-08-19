@@ -6,7 +6,7 @@
 > 공통 응답: `ApiResponse<T>`  
 > 호출 경로: `Frontend → Gateway(:8000) → Member(:8082)` (Access 검증은 Gateway)
 
-최종 갱신: 2026-08-18 (#25 본인인증 스텁 입력·이메일 실발송)
+최종 갱신: 2026-08-19 (#27 회원 팔로우)
 
 ---
 
@@ -24,6 +24,7 @@
 | ✅ Done | #10 | 내 회원정보·프로필·약관 동의 |
 | ✅ Done | #17 | 본인인증 실명(`name`) DB·응답 반영 |
 | ✅ Done | #25 | 본인인증 스텁 휴대폰·실명 지정 / 이메일 SMTP 실발송 |
+| ✅ Done | #27 | 회원 팔로우 / 언팔로우 / 목록 / 상태 조회 |
 
 ---
 
@@ -57,8 +58,14 @@
 | #10 | GET | `/api/v1/members/me/agreements` | O | 내 약관 동의 조회 (화면 로드용) |
 | #10 | POST | `/api/v1/members/me/agreements` | O | 선택 약관만 단독 변경 (보조) |
 | #10 | PATCH | `/api/v1/members/me/password` | O | 비밀번호만 단독 변경 (보조) |
-| #10 | GET | `/api/v1/members/{memberUuid}/profile` | X | 공개 프로필 |
+| #10 | GET | `/api/v1/members/{memberUuid}/profile` | X | 공개 프로필 (`memberUuid`, 팔로우 수, 로그인 시 `isFollowing`) |
 | #10 | GET | `/api/v1/members/{memberUuid}` | 내부 | 최소 공개정보 (Gateway Trust, `name` 포함) |
+| #27 | GET | `/api/v1/members/search` | X | 회원 목록 (`memberUuid` 포함, `nickname` 검색, `page`/`size`) |
+| #27 | POST | `/api/v1/members/{memberUuid}/follow` | O | 해당 회원 팔로우 (`followUuid`, `isActive`) |
+| #27 | DELETE | `/api/v1/members/{memberUuid}/follow` | O | 언팔로우 (비활성화, 204) |
+| #27 | GET | `/api/v1/members/{memberUuid}/followers` | X | 팔로워 요약 프로필 목록 (`page`, `size`) |
+| #27 | GET | `/api/v1/members/{memberUuid}/followings` | X | 팔로잉 요약 프로필 목록 (`page`, `size`) |
+| #27 | GET | `/api/v1/members/{memberUuid}/follow-status` | O | 내가 해당 회원을 팔로우 중인지 (`isFollowing`) |
 
 ### 본인인증 실명 (#17)
 
@@ -87,6 +94,21 @@
 - 프로필 이미지: 400×400, jpg/png/webp, 2MB. S3 전 단계로 `stub://profiles/{uuid}.ext` 저장
 - Gateway Trust: `GATEWAY_INTERNAL_TOKEN` + `GATEWAY_TRUST_CHECK_ENABLED` (로컬 기본 `false`)
 
+### 팔로우 (#27)
+
+- 테이블: `follow` (`follow_id` PK, `follow_uuid` 외부 식별자, 회원 쌍 UNIQUE, 자기 자신 CHECK 금지)
+- 언팔로우: 행 삭제 없음. `is_active=false`. 같은 쌍을 다시 팔로우하면 재활성화
+- 자기 자신 팔로우 → `CANNOT_FOLLOW_SELF`
+- 대상 회원 없음/탈퇴 → `MEMBER_NOT_FOUND`
+- 목록: 활성 팔로우만, 요약 프로필(`memberUuid`, `nickname`, `profileImage`, `profileIntro`, `grade`)
+- 페이지: `page` 기본 0, `size` 기본 20, 최대 50
+- **팔로우 대상 UUID**: `GET /api/v1/members/search` 목록/닉네임 검색 → `content[].memberUuid` 사용
+- 공개 프로필: `GET /api/v1/members/{memberUuid}/profile` → `memberUuid`, `followerCount`, `followingCount`, 로그인 시 `isFollowing`
+- 로그인 상태로 목록 조회하면 본인은 제외
+- **인증 필요 API** (`POST/DELETE .../follow`, `GET .../follow-status`): Gateway `:8000`에서는 `Authorization: Bearer {accessToken}`
+  - Gateway는 클라이언트가 넣은 `X-Auth-User-Id`를 제거한다
+  - Member `:8082` 직접 호출일 때만 `X-Auth-User-Id`에 내 memberUuid
+
 ### 계정 복구 (#9)
 
 - 아이디 찾기: 본인인증 confirm 후 `phoneNumber`로 조회 → `email` / `maskedEmail` / `loginType`
@@ -105,8 +127,8 @@
 
 ## 미완료 API (예정)
 
-코어 27개 API 완료.  
-후속(코어 밖, 별도 이슈): 팔로우 / 좋아요 / 멤버십 / 결제수단
+코어 API + 팔로우(#27) 완료.  
+후속(별도 이슈): 좋아요 / 멤버십 / 결제수단
 
 ---
 

@@ -21,9 +21,11 @@ import com.planwith.planwith_fo_member.application.port.in.ChangePasswordUseCase
 import com.planwith.planwith_fo_member.application.port.in.GetMyMemberUseCase;
 import com.planwith.planwith_fo_member.application.port.in.GetMyProfileUseCase;
 import com.planwith.planwith_fo_member.application.port.in.GetPublicProfileUseCase;
+import com.planwith.planwith_fo_member.application.port.in.ListMembersUseCase;
 import com.planwith.planwith_fo_member.application.port.in.MemberAgreementUseCase;
 import com.planwith.planwith_fo_member.application.port.in.UpdateMyPageUseCase;
 import com.planwith.planwith_fo_member.application.port.in.UploadProfileImageUseCase;
+import com.planwith.planwith_fo_member.application.port.out.FollowRepositoryPort;
 import com.planwith.planwith_fo_member.application.port.out.MemberRepositoryPort;
 import com.planwith.planwith_fo_member.application.port.out.PhoneVerificationStorePort;
 import com.planwith.planwith_fo_member.domain.member.Member;
@@ -36,7 +38,8 @@ public class MemberProfileService implements
 		GetMyProfileUseCase,
 		UpdateMyPageUseCase,
 		UploadProfileImageUseCase,
-		GetPublicProfileUseCase {
+		GetPublicProfileUseCase,
+		ListMembersUseCase {
 
 	private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
 			"image/jpeg",
@@ -46,8 +49,10 @@ public class MemberProfileService implements
 	);
 	private static final long MAX_BYTES = 2 * 1024 * 1024;
 	private static final int REQUIRED_SIZE = 400;
+	private static final int MAX_PAGE_SIZE = 50;
 
 	private final MemberRepositoryPort memberRepository;
+	private final FollowRepositoryPort followRepository;
 	private final PhoneVerificationStorePort phoneVerificationStore;
 	private final PhoneVerificationService phoneVerificationService;
 	private final MemberAgreementUseCase memberAgreementUseCase;
@@ -56,6 +61,7 @@ public class MemberProfileService implements
 
 	public MemberProfileService(
 			MemberRepositoryPort memberRepository,
+			FollowRepositoryPort followRepository,
 			PhoneVerificationStorePort phoneVerificationStore,
 			PhoneVerificationService phoneVerificationService,
 			MemberAgreementUseCase memberAgreementUseCase,
@@ -63,6 +69,7 @@ public class MemberProfileService implements
 			GetMyMemberUseCase getMyMemberUseCase
 	) {
 		this.memberRepository = memberRepository;
+		this.followRepository = followRepository;
 		this.phoneVerificationStore = phoneVerificationStore;
 		this.phoneVerificationService = phoneVerificationService;
 		this.memberAgreementUseCase = memberAgreementUseCase;
@@ -193,13 +200,52 @@ public class MemberProfileService implements
 
 	@Override
 	@Transactional(readOnly = true)
-	public ProfileResult getPublic(UUID memberUuid) {
-		Member member = memberRepository.findByUuid(memberUuid)
-				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-		if (member.getStatus() != MemberStatus.ACTIVE) {
-			throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+	public PublicProfileResult getPublic(UUID memberUuid, UUID viewerMemberUuid) {
+		requireActiveMember(memberUuid);
+		MemberProfile profile = requireProfile(memberUuid);
+		Boolean isFollowing = null;
+		if (viewerMemberUuid != null) {
+			isFollowing = !viewerMemberUuid.equals(memberUuid)
+					&& followRepository.existsActive(viewerMemberUuid, memberUuid);
 		}
-		return toResult(requireProfile(memberUuid));
+		return new PublicProfileResult(
+				profile.getMemberUuid(),
+				profile.getNickname(),
+				profile.getProfileImage(),
+				profile.getProfileIntro(),
+				profile.getGrade(),
+				followRepository.countActiveFollowers(memberUuid),
+				followRepository.countActiveFollowings(memberUuid),
+				isFollowing
+		);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public PagedProfiles list(String nickname, UUID viewerMemberUuid, int page, int size) {
+		if (page < 0) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST, "page는 0 이상이어야 합니다.");
+		}
+		if (size < 1 || size > MAX_PAGE_SIZE) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST, "size는 1 이상 " + MAX_PAGE_SIZE + " 이하여야 합니다.");
+		}
+		String keyword = StringUtils.hasText(nickname) ? nickname.trim() : null;
+		if (keyword != null && keyword.length() > 10) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST, "닉네임은 10자 이하여야 합니다.");
+		}
+		MemberRepositoryPort.PagedProfiles result = memberRepository.findActiveProfiles(
+				keyword,
+				viewerMemberUuid,
+				page,
+				size
+		);
+		return new PagedProfiles(
+				result.profiles().stream().map(this::toResult).toList(),
+				result.page(),
+				result.size(),
+				result.totalElements(),
+				result.totalPages()
+		);
 	}
 
 	private void requireActiveMember(UUID memberUuid) {

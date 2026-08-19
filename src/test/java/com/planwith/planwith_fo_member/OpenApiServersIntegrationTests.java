@@ -26,4 +26,11 @@ class OpenApiServersIntegrationTests {
 				.andExpect(jsonPath("$.servers[0].url").value("/"))
 				.andExpect(jsonPath("$.servers[0].description").value("API Gateway"));
 	}
+
+	@Test
+	void apiDocsIncludesMemberSearch() throws Exception {
+		mockMvc.perform(get("/v3/api-docs"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/v1/members/search'].get").exists());
+	}
 }

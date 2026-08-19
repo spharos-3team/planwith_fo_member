@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.planwith.planwith_fo_member.adapter.in.web.auth.AuthenticatedUser;
+import com.planwith.planwith_fo_member.adapter.in.web.auth.AuthenticatedUserContext;
 import com.planwith.planwith_fo_member.adapter.in.web.auth.GatewayAuthenticationContextResolver;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.ApiResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.ChangePasswordRequest;
@@ -24,6 +26,7 @@ import com.planwith.planwith_fo_member.adapter.in.web.dto.InternalMemberResponse
 import com.planwith.planwith_fo_member.adapter.in.web.dto.MemberAgreementResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.MemberMeResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.MemberProfileResponse;
+import com.planwith.planwith_fo_member.adapter.in.web.dto.PublicProfileResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.UpdateMyPageRequest;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.UpdateMyPageResponse;
 import com.planwith.planwith_fo_member.adapter.in.web.dto.UpsertAgreementsRequest;
@@ -48,6 +51,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/v1")
 @Tag(name = "member-me", description = "내 회원정보 / 프로필 / 약관 동의")
+@SecurityRequirement(name = OpenApiConfig.BEARER_SCHEME)
 @SecurityRequirement(name = OpenApiConfig.GATEWAY_USER_ID_SCHEME)
 public class MemberMeController {
 
@@ -162,10 +166,20 @@ public class MemberMeController {
 
 	@GetMapping("/members/{memberUuid}/profile")
 	@Operation(summary = "공개 프로필 조회", security = {})
-	public ResponseEntity<ApiResponse<MemberProfileResponse>> getPublicProfile(
+	public ResponseEntity<ApiResponse<PublicProfileResponse>> getPublicProfile(
 			@PathVariable UUID memberUuid
 	) {
-		return ResponseEntity.ok(ApiResponse.success(toProfileResponse(getPublicProfileUseCase.getPublic(memberUuid))));
+		var result = getPublicProfileUseCase.getPublic(memberUuid, viewerUuidOrNull());
+		return ResponseEntity.ok(ApiResponse.success(new PublicProfileResponse(
+				result.memberUuid(),
+				result.nickname(),
+				result.profileImage(),
+				result.profileIntro(),
+				result.grade(),
+				result.followerCount(),
+				result.followingCount(),
+				result.isFollowing()
+		)));
 	}
 
 	@GetMapping("/members/{memberUuid}")
@@ -251,5 +265,10 @@ public class MemberMeController {
 				result.profileIntro(),
 				result.grade()
 		);
+	}
+
+	private UUID viewerUuidOrNull() {
+		AuthenticatedUser viewer = AuthenticatedUserContext.get();
+		return viewer == null ? null : viewer.userId();
 	}
 }

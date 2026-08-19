@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -109,6 +110,23 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 	@Transactional(readOnly = true)
 	public Optional<MemberProfile> findProfileByMemberUuid(UUID memberUuid) {
 		return memberProfileJpaRepository.findByMemberUuid(memberUuid.toString()).map(this::toProfileDomain);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public PagedProfiles findActiveProfiles(String nickname, UUID excludeMemberUuid, int page, int size) {
+		var result = memberProfileJpaRepository.findActiveProfiles(
+				nickname,
+				excludeMemberUuid == null ? null : excludeMemberUuid.toString(),
+				PageRequest.of(page, size)
+		);
+		return new PagedProfiles(
+				result.getContent().stream().map(this::toProfileDomain).toList(),
+				result.getNumber(),
+				result.getSize(),
+				result.getTotalElements(),
+				result.getTotalPages()
+		);
 	}
 
 	@Override

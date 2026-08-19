@@ -4,5 +4,17 @@ import java.util.UUID;
 
 public interface GetPublicProfileUseCase {
 
-	GetMyProfileUseCase.ProfileResult getPublic(UUID memberUuid);
+	PublicProfileResult getPublic(UUID memberUuid, UUID viewerMemberUuid);
+
+	record PublicProfileResult(
+			UUID memberUuid,
+			String nickname,
+			String profileImage,
+			String profileIntro,
+			String grade,
+			long followerCount,
+			long followingCount,
+			Boolean isFollowing
+	) {
+	}
 }
