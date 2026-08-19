@@ -102,7 +102,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 				nickname,
 				blankToNull(command.profileImage()),
 				blankToNull(command.profileIntro()),
-				"SEED"
+				MemberProfile.INITIAL_GRADE
 		);
 
 		Member saved = memberRepository.saveMember(member, profile);

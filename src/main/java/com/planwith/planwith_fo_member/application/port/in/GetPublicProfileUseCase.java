@@ -12,6 +12,8 @@ public interface GetPublicProfileUseCase {
 			String profileImage,
 			String profileIntro,
 			String grade,
+			boolean profileBadge,
+			boolean profileSpecialBorder,
 			long followerCount,
 			long followingCount,
 			Boolean isFollowing

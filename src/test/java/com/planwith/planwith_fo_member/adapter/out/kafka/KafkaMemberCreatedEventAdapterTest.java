@@ -27,9 +27,9 @@ class KafkaMemberCreatedEventAdapterTest {
 	private KafkaTemplate<String, String> kafkaTemplate;
 
 	@Test
-	void publishesJsonMatchingGradeServiceContract() throws Exception {
+	void publishesJsonMatchingGradeServiceContractWithMemberUuidKey() throws Exception {
 		ObjectMapper objectMapper = new ObjectMapper();
-		MemberKafkaProperties properties = new MemberKafkaProperties(true, "planwith.member.created");
+		MemberKafkaProperties properties = kafkaProperties();
 		KafkaMemberCreatedEventAdapter adapter = new KafkaMemberCreatedEventAdapter(
 				kafkaTemplate,
 				objectMapper,
@@ -37,17 +37,28 @@ class KafkaMemberCreatedEventAdapterTest {
 		);
 		String eventUuid = UUID.randomUUID().toString();
 		String memberUuid = UUID.randomUUID().toString();
-		when(kafkaTemplate.send(eq("planwith.member.created"), eq(eventUuid), org.mockito.ArgumentMatchers.anyString()))
+		when(kafkaTemplate.send(eq("planwith.member.created"), eq(memberUuid), org.mockito.ArgumentMatchers.anyString()))
 				.thenReturn(CompletableFuture.completedFuture(null));
 
 		adapter.publish(MemberCreatedEvent.of(eventUuid, memberUuid));
 
 		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
-		verify(kafkaTemplate).send(eq("planwith.member.created"), eq(eventUuid), payloadCaptor.capture());
+		verify(kafkaTemplate).send(eq("planwith.member.created"), eq(memberUuid), payloadCaptor.capture());
 
 		JsonNode payload = objectMapper.readTree(payloadCaptor.getValue());
 		assertThat(payload.get("eventUuid").asText()).isEqualTo(eventUuid);
 		assertThat(payload.get("memberUuid").asText()).isEqualTo(memberUuid);
 		assertThat(payload.get("eventType").asText()).isEqualTo("MemberCreated");
+	}
+
+	private static MemberKafkaProperties kafkaProperties() {
+		return new MemberKafkaProperties(
+				true,
+				true,
+				"planwith.member.created",
+				"planwith.follow.created",
+				"planwith.follow.removed",
+				"planwith.grade.changed"
+		);
 	}
 }

@@ -15,6 +15,8 @@ public interface FollowRepositoryPort {
 
 	Follow updateActive(Long followId, boolean active);
 
+	long nextSourceVersion(UUID followeeMemberUuid);
+
 	boolean existsActive(UUID followerMemberUuid, UUID followeeMemberUuid);
 
 	long countActiveFollowers(UUID followeeMemberUuid);

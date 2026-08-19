@@ -7,6 +7,8 @@ public record MemberProfileResponse(
 		String nickname,
 		String profileImage,
 		String profileIntro,
-		String grade
+		String grade,
+		boolean profileBadge,
+		boolean profileSpecialBorder
 ) {
 }

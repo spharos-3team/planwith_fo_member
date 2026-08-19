@@ -5,6 +5,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.kafka")
 public record MemberKafkaProperties(
 		boolean enabled,
-		String memberCreatedTopic
+		boolean consumerEnabled,
+		String memberCreatedTopic,
+		String followCreatedTopic,
+		String followRemovedTopic,
+		String gradeChangedTopic
 ) {
 }

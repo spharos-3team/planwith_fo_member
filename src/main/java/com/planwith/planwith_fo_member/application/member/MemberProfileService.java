@@ -214,6 +214,8 @@ public class MemberProfileService implements
 				profile.getProfileImage(),
 				profile.getProfileIntro(),
 				profile.getGrade(),
+				profile.isProfileBadge(),
+				profile.isProfileSpecialBorder(),
 				followRepository.countActiveFollowers(memberUuid),
 				followRepository.countActiveFollowings(memberUuid),
 				isFollowing
@@ -267,7 +269,9 @@ public class MemberProfileService implements
 				profile.getNickname(),
 				profile.getProfileImage(),
 				profile.getProfileIntro(),
-				profile.getGrade()
+				profile.getGrade(),
+				profile.isProfileBadge(),
+				profile.isProfileSpecialBorder()
 		);
 	}
 

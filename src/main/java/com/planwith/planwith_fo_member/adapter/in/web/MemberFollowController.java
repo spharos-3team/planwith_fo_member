@@ -152,7 +152,9 @@ public class MemberFollowController {
 				result.nickname(),
 				result.profileImage(),
 				result.profileIntro(),
-				result.grade()
+				result.grade(),
+				result.profileBadge(),
+				result.profileSpecialBorder()
 		);
 	}
 }

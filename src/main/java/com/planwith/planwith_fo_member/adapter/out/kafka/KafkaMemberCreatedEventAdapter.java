@@ -53,19 +53,19 @@ public class KafkaMemberCreatedEventAdapter implements MemberCreatedEventPort {
 		log.info("KafkaMemberCreatedEventAdapter : publish : 회원 생성 이벤트 Kafka 발행 시작 - topic={}, eventUuid={}, memberUuid={}",
 				topic, event.eventUuid(), event.memberUuid());
 		try {
-			CompletableFuture<?> sendResult = kafkaTemplate.send(topic, event.eventUuid(), payload);
+			CompletableFuture<?> sendResult = kafkaTemplate.send(topic, event.memberUuid(), payload);
 			sendResult.whenComplete((result, exception) -> {
 				if (exception != null) {
-					log.error("KafkaMemberCreatedEventAdapter : publish : 회원 생성 이벤트 Kafka 발행 실패 - topic={}, eventUuid={}",
-							topic, event.eventUuid());
+					log.error("KafkaMemberCreatedEventAdapter : publish : 회원 생성 이벤트 Kafka 발행 실패 - topic={}, memberUuid={}, eventUuid={}",
+							topic, event.memberUuid(), event.eventUuid());
 					return;
 				}
-				log.info("KafkaMemberCreatedEventAdapter : publish : 회원 생성 이벤트 Kafka 발행 완료 - topic={}, eventUuid={}",
-						topic, event.eventUuid());
+				log.info("KafkaMemberCreatedEventAdapter : publish : 회원 생성 이벤트 Kafka 발행 완료 - topic={}, memberUuid={}, eventUuid={}",
+						topic, event.memberUuid(), event.eventUuid());
 			});
 		} catch (RuntimeException exception) {
-			log.error("KafkaMemberCreatedEventAdapter : publish : 회원 생성 이벤트 Kafka 발행 중 예외 - topic={}, eventUuid={}",
-					topic, event.eventUuid());
+			log.error("KafkaMemberCreatedEventAdapter : publish : 회원 생성 이벤트 Kafka 발행 중 예외 - topic={}, memberUuid={}, eventUuid={}",
+					topic, event.memberUuid(), event.eventUuid());
 		}
 	}
 

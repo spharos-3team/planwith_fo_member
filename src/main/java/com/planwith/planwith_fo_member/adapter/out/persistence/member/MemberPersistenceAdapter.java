@@ -77,6 +77,8 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 		profileEntity.setProfileImage(profile.getProfileImage());
 		profileEntity.setProfileIntro(profile.getProfileIntro());
 		profileEntity.setGrade(profile.getGrade());
+		profileEntity.setProfileBadge(profile.isProfileBadge());
+		profileEntity.setProfileSpecialBorder(profile.isProfileSpecialBorder());
 		memberProfileJpaRepository.save(profileEntity);
 
 		return toDomain(savedMember);
@@ -183,6 +185,16 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 	}
 
 	@Override
+	public void updateGradeBenefits(UUID memberUuid, String grade, boolean profileBadge, boolean profileSpecialBorder) {
+		MemberProfileJpaEntity entity = memberProfileJpaRepository.findByMemberUuid(memberUuid.toString())
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+		entity.setGrade(grade);
+		entity.setProfileBadge(profileBadge);
+		entity.setProfileSpecialBorder(profileSpecialBorder);
+		memberProfileJpaRepository.save(entity);
+	}
+
+	@Override
 	public void softDelete(UUID memberUuid, MemberStatus status, Instant deletedAt) {
 		MemberJpaEntity entity = requireMember(memberUuid);
 		entity.setStatus(status);
@@ -218,7 +230,9 @@ public class MemberPersistenceAdapter implements MemberRepositoryPort {
 				entity.getNickname(),
 				entity.getProfileImage(),
 				entity.getProfileIntro(),
-				entity.getGrade()
+				entity.getGrade(),
+				entity.isProfileBadge(),
+				entity.isProfileSpecialBorder()
 		);
 	}
 }

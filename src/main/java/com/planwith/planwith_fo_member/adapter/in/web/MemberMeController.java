@@ -176,6 +176,8 @@ public class MemberMeController {
 				result.profileImage(),
 				result.profileIntro(),
 				result.grade(),
+				result.profileBadge(),
+				result.profileSpecialBorder(),
 				result.followerCount(),
 				result.followingCount(),
 				result.isFollowing()
@@ -263,7 +265,9 @@ public class MemberMeController {
 				result.nickname(),
 				result.profileImage(),
 				result.profileIntro(),
-				result.grade()
+				result.grade(),
+				result.profileBadge(),
+				result.profileSpecialBorder()
 		);
 	}
 

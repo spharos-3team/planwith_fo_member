@@ -55,5 +55,7 @@ public interface MemberRepositoryPort {
 
 	void updateProfileImage(UUID memberUuid, String profileImageUrl);
 
+	void updateGradeBenefits(UUID memberUuid, String grade, boolean profileBadge, boolean profileSpecialBorder);
+
 	void softDelete(UUID memberUuid, MemberStatus status, Instant deletedAt);
 }

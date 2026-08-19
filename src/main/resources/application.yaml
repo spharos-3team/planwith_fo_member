@@ -22,6 +22,14 @@ spring:
       acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:planwith-fo-member}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+      auto-startup: ${MEMBER_KAFKA_CONSUMER_ENABLED:${MEMBER_KAFKA_ENABLED:true}}
   mail:
     host: ${MAIL_HOST:}
     port: ${MAIL_PORT:587}
@@ -96,7 +104,11 @@ app:
   kafka:
     # false: Kafka 미기동 환경(테스트/로컬 단독). 운영은 true.
     enabled: ${MEMBER_KAFKA_ENABLED:true}
+    consumer-enabled: ${MEMBER_KAFKA_CONSUMER_ENABLED:${MEMBER_KAFKA_ENABLED:true}}
     member-created-topic: ${MEMBER_TOPIC_MEMBER_CREATED:planwith.member.created}
+    follow-created-topic: ${MEMBER_TOPIC_FOLLOW_CREATED:planwith.follow.created}
+    follow-removed-topic: ${MEMBER_TOPIC_FOLLOW_REMOVED:planwith.follow.removed}
+    grade-changed-topic: ${MEMBER_TOPIC_GRADE_CHANGED:planwith.grade.changed}
   email-verification:
     code-ttl-seconds: ${EMAIL_VERIFICATION_CODE_TTL_SECONDS:600}
     verified-ttl-seconds: ${EMAIL_VERIFICATION_VERIFIED_TTL_SECONDS:1800}

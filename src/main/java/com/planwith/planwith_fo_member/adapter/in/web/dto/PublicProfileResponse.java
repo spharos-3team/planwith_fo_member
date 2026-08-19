@@ -8,6 +8,8 @@ public record PublicProfileResponse(
 		String profileImage,
 		String profileIntro,
 		String grade,
+		boolean profileBadge,
+		boolean profileSpecialBorder,
 		long followerCount,
 		long followingCount,
 		Boolean isFollowing

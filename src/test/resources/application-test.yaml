@@ -46,7 +46,11 @@ app:
     public-url: /
   kafka:
     enabled: false
+    consumer-enabled: false
     member-created-topic: planwith.member.created
+    follow-created-topic: planwith.follow.created
+    follow-removed-topic: planwith.follow.removed
+    grade-changed-topic: planwith.grade.changed
   email-verification:
     code-ttl-seconds: 600
     verified-ttl-seconds: 1800

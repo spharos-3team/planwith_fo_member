@@ -106,6 +106,9 @@ class MemberMeIntegrationTests {
 				.andExpect(jsonPath("$.data.member.email").value(email))
 				.andExpect(jsonPath("$.data.profile.nickname").value("마이닉변경"))
 				.andExpect(jsonPath("$.data.profile.profileIntro").value("소개문구"))
+				.andExpect(jsonPath("$.data.profile.grade").value("ROOKIE"))
+				.andExpect(jsonPath("$.data.profile.profileBadge").value(false))
+				.andExpect(jsonPath("$.data.profile.profileSpecialBorder").value(false))
 				.andExpect(jsonPath("$.data.agreements[?(@.termUuid=='%s')].agreed".formatted(MARKETING_TERM)).value(true));
 
 		MockMultipartFile file = new MockMultipartFile(
