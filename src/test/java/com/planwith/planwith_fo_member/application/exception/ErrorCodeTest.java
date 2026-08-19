@@ -22,6 +22,7 @@ class ErrorCodeTest {
 		assertThat(ErrorCode.PASSWORD_CHANGE_NOT_ALLOWED_FOR_SOCIAL.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(ErrorCode.REQUIRED_TERM_NOT_MODIFIABLE.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(ErrorCode.INVALID_PROFILE_IMAGE.status()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(ErrorCode.CANNOT_FOLLOW_SELF.status()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
 	@Test

@@ -32,6 +32,7 @@ public enum ErrorCode {
 	PASSWORD_CHANGE_NOT_ALLOWED_FOR_SOCIAL(HttpStatus.BAD_REQUEST, "PASSWORD_CHANGE_NOT_ALLOWED_FOR_SOCIAL", "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다."),
 	REQUIRED_TERM_NOT_MODIFIABLE(HttpStatus.BAD_REQUEST, "REQUIRED_TERM_NOT_MODIFIABLE", "필수 약관 동의는 변경할 수 없습니다."),
 	INVALID_PROFILE_IMAGE(HttpStatus.BAD_REQUEST, "INVALID_PROFILE_IMAGE", "프로필 이미지 형식이 올바르지 않습니다."),
+	CANNOT_FOLLOW_SELF(HttpStatus.BAD_REQUEST, "CANNOT_FOLLOW_SELF", "자기 자신은 팔로우할 수 없습니다."),
 	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.");
 
 	private final HttpStatus status;

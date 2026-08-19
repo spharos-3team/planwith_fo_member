@@ -1,6 +1,7 @@
 package com.planwith.planwith_fo_member.application.port.out;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +31,17 @@ public interface MemberRepositoryPort {
 	Optional<Member> findByPhoneNumber(String phoneNumber);
 
 	Optional<MemberProfile> findProfileByMemberUuid(UUID memberUuid);
+
+	PagedProfiles findActiveProfiles(String nickname, UUID excludeMemberUuid, int page, int size);
+
+	record PagedProfiles(
+			List<MemberProfile> profiles,
+			int page,
+			int size,
+			long totalElements,
+			int totalPages
+	) {
+	}
 
 	void updateLastLoginAt(UUID memberUuid, Instant lastLoginAt);
 

@@ -157,7 +157,10 @@ class MemberMeIntegrationTests {
 
 		mockMvc.perform(get("/api/v1/members/{memberUuid}/profile", memberUuid))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.nickname").value("마이닉변경"));
+				.andExpect(jsonPath("$.data.memberUuid").value(memberUuid))
+				.andExpect(jsonPath("$.data.nickname").value("마이닉변경"))
+				.andExpect(jsonPath("$.data.followerCount").value(0))
+				.andExpect(jsonPath("$.data.followingCount").value(0));
 
 		mockMvc.perform(get("/api/v1/members/{memberUuid}", memberUuid))
 				.andExpect(status().isOk())
