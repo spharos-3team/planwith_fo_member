@@ -34,6 +34,7 @@ public class SocialSignupService implements SocialSignupUseCase {
 	private final PhoneVerificationService phoneVerificationService;
 	private final TermsAgreementService termsAgreementService;
 	private final AuthSessionService authSessionService;
+	private final MemberCreatedEventPublisher memberCreatedEventPublisher;
 
 	public SocialSignupService(
 			SocialOAuthClientPort socialOAuthClient,
@@ -42,7 +43,8 @@ public class SocialSignupService implements SocialSignupUseCase {
 			PhoneVerificationStorePort phoneVerificationStore,
 			PhoneVerificationService phoneVerificationService,
 			TermsAgreementService termsAgreementService,
-			AuthSessionService authSessionService
+			AuthSessionService authSessionService,
+			MemberCreatedEventPublisher memberCreatedEventPublisher
 	) {
 		this.socialOAuthClient = socialOAuthClient;
 		this.memberRepository = memberRepository;
@@ -51,6 +53,7 @@ public class SocialSignupService implements SocialSignupUseCase {
 		this.phoneVerificationService = phoneVerificationService;
 		this.termsAgreementService = termsAgreementService;
 		this.authSessionService = authSessionService;
+		this.memberCreatedEventPublisher = memberCreatedEventPublisher;
 	}
 
 	@Override
@@ -126,6 +129,7 @@ public class SocialSignupService implements SocialSignupUseCase {
 		Member saved = memberRepository.saveMember(member, profile);
 		agreementPort.saveAgreements(saved.getMemberUuid(), agreementCommands);
 		phoneVerificationStore.clear(phoneNumber);
+		memberCreatedEventPublisher.publish(saved.getMemberUuid());
 
 		AuthTokenResult tokens = authSessionService.issueSession(saved.getMemberUuid());
 		return new SocialSignupResult(
