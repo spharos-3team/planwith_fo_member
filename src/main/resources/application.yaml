@@ -16,6 +16,12 @@ spring:
           time_zone: UTC
   jackson:
     time-zone: UTC
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   mail:
     host: ${MAIL_HOST:}
     port: ${MAIL_PORT:587}
@@ -87,6 +93,10 @@ app:
     public-url: ${GATEWAY_PUBLIC_URL:/}
   deploy:
     marker: ${DEPLOY_MARKER:planwith-fo-member-deploy-v1}
+  kafka:
+    # false: Kafka 미기동 환경(테스트/로컬 단독). 운영은 true.
+    enabled: ${MEMBER_KAFKA_ENABLED:true}
+    member-created-topic: ${MEMBER_TOPIC_MEMBER_CREATED:planwith.member.created}
   email-verification:
     code-ttl-seconds: ${EMAIL_VERIFICATION_CODE_TTL_SECONDS:600}
     verified-ttl-seconds: ${EMAIL_VERIFICATION_VERIFIED_TTL_SECONDS:1800}

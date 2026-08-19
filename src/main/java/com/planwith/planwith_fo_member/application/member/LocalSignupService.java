@@ -32,6 +32,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 	private final PhoneVerificationService phoneVerificationService;
 	private final TermsAgreementService termsAgreementService;
 	private final PasswordEncoder passwordEncoder;
+	private final MemberCreatedEventPublisher memberCreatedEventPublisher;
 
 	public LocalSignupService(
 			MemberRepositoryPort memberRepository,
@@ -40,7 +41,8 @@ public class LocalSignupService implements LocalSignupUseCase {
 			PhoneVerificationStorePort phoneVerificationStore,
 			PhoneVerificationService phoneVerificationService,
 			TermsAgreementService termsAgreementService,
-			PasswordEncoder passwordEncoder
+			PasswordEncoder passwordEncoder,
+			MemberCreatedEventPublisher memberCreatedEventPublisher
 	) {
 		this.memberRepository = memberRepository;
 		this.agreementPort = agreementPort;
@@ -49,6 +51,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 		this.phoneVerificationService = phoneVerificationService;
 		this.termsAgreementService = termsAgreementService;
 		this.passwordEncoder = passwordEncoder;
+		this.memberCreatedEventPublisher = memberCreatedEventPublisher;
 	}
 
 	@Override
@@ -106,6 +109,7 @@ public class LocalSignupService implements LocalSignupUseCase {
 		agreementPort.saveAgreements(saved.getMemberUuid(), agreementCommands);
 		verificationStore.clear(email);
 		phoneVerificationStore.clear(phoneNumber);
+		memberCreatedEventPublisher.publish(saved.getMemberUuid());
 
 		return new LocalSignupResult(
 				saved.getMemberUuid(),
