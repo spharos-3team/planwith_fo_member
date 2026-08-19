@@ -8,10 +8,22 @@ spring:
     hibernate:
       ddl-auto: create-drop
     open-in-view: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+    admin:
+      auto-create: false
+      fail-fast: false
 
 eureka:
   client:
     enabled: false
+
+management:
+  health:
+    kafka:
+      enabled: false
 
 app:
   jwt:
@@ -32,6 +44,9 @@ app:
     internal-token: test-gateway-token
     trust-check-enabled: false
     public-url: /
+  kafka:
+    enabled: false
+    member-created-topic: planwith.member.created
   email-verification:
     code-ttl-seconds: 600
     verified-ttl-seconds: 1800
