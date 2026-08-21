@@ -72,21 +72,18 @@ public class SocialSignupService implements SocialSignupUseCase {
 		SocialOAuthClientPort.SocialUserProfile socialUser = socialOAuthClient.fetchUser(
 				provider,
 				command.authorizationCode(),
-				command.redirectUri()
+				command.redirectUri(),
+				command.oauthState()
 		);
 		if (!StringUtils.hasText(socialUser.socialId())) {
 			throw new BusinessException(ErrorCode.SOCIAL_AUTH_FAILED, "소셜 계정 식별자를 확인할 수 없습니다.");
 		}
-		if (!StringUtils.hasText(socialUser.email())) {
-			throw new BusinessException(ErrorCode.SOCIAL_EMAIL_REQUIRED);
-		}
 
-		String email = socialUser.email().trim().toLowerCase();
+		String providedEmail = socialUser.email() == null ? null : socialUser.email().trim().toLowerCase();
+		boolean emailTaken = StringUtils.hasText(providedEmail) && memberRepository.existsByEmail(providedEmail);
+		String email = SocialAccountEmail.resolve(provider, socialUser.socialId(), socialUser.email(), emailTaken);
 		if (memberRepository.existsByLoginTypeAndSocialId(provider, socialUser.socialId())) {
 			throw new BusinessException(ErrorCode.SOCIAL_ACCOUNT_ALREADY_EXISTS);
-		}
-		if (memberRepository.existsByEmail(email)) {
-			throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
 		}
 		if (memberRepository.existsByNickname(nickname)) {
 			throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);

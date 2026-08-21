@@ -104,6 +104,20 @@ class SocialSignupIntegrationTests {
 	}
 
 	@Test
+	void socialSignupSucceedsWithoutProviderEmail() throws Exception {
+		verifyPhone(PHONE);
+
+		mockMvc.perform(post("/api/v1/auth/naver/signup")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(signupBody("stub:naver-no-email", "네이버무메일")))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.email").value("social.naver.naver-no-email@users.planwith"))
+				.andExpect(jsonPath("$.data.nickname").value("네이버무메일"))
+				.andExpect(jsonPath("$.data.accessToken").isNotEmpty());
+	}
+
+	@Test
 	void socialSignupRejectsUnsupportedProvider() throws Exception {
 		verifyPhone(PHONE);
 		mockMvc.perform(post("/api/v1/auth/facebook/signup")

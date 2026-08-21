@@ -10,6 +10,9 @@ public record SocialLoginRequest(
 		String authorizationCode,
 
 		@Schema(nullable = true)
-		String redirectUri
+		String redirectUri,
+
+		@Schema(nullable = true, description = "OAuth authorize 때 사용한 state. 네이버 토큰 교환에 필요")
+		String state
 ) {
 }

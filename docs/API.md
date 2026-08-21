@@ -153,7 +153,7 @@
 | JWT 키 | `JWT_*_KEY_PATH` 비움 | ephemeral | 재시작 시 키 변경 가능 | PEM 경로 지정 |
 | Gateway Trust | `GATEWAY_TRUST_CHECK_ENABLED` | `false` | Header `X-Auth-User-Id` 직접 | Gateway + `GATEWAY_INTERNAL_TOKEN` |
 
-환경변수 예시: `planwith-infra/env/member.env.example`
+환경변수 예시: 로컬 `planwith_fo_member/.env.example` → `.env` / 서버 `planwith-infra/env/member.env.example`
 
 ### 1) 포트원 본인인증
 

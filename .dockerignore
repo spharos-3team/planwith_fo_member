@@ -4,6 +4,8 @@
 .gradle
 build
 out
+.env
+.env.local
 *.md
 compose.snippet.yml
 gateway.route.snippet.yml

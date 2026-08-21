@@ -5,7 +5,7 @@ import com.planwith.planwith_fo_member.domain.member.LoginType;
 
 public interface SocialLoginUseCase {
 
-	record SocialLoginCommand(String authorizationCode, String redirectUri) {
+	record SocialLoginCommand(String authorizationCode, String redirectUri, String oauthState) {
 	}
 
 	record SocialLoginResult(boolean isNewMember, AuthTokenResult tokens) {

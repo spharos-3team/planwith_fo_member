@@ -289,7 +289,8 @@ public class MemberAuthController {
 		LoginType loginType = SocialProviderParser.parse(provider);
 		var result = socialLoginUseCase.login(loginType, new SocialLoginUseCase.SocialLoginCommand(
 				request.authorizationCode(),
-				request.redirectUri()
+				request.redirectUri(),
+				request.state()
 		));
 		if (result.isNewMember() || result.tokens() == null) {
 			return ResponseEntity.ok(ApiResponse.success(new SocialLoginResponse(
@@ -328,6 +329,7 @@ public class MemberAuthController {
 		var result = socialSignupUseCase.signup(loginType, new SocialSignupUseCase.SocialSignupCommand(
 				request.authorizationCode(),
 				request.redirectUri(),
+				request.state(),
 				request.nickname(),
 				request.profileImage(),
 				request.profileIntro(),

@@ -6,6 +6,15 @@ public interface SocialOAuthClientPort {
 
 	SocialUserProfile fetchUser(LoginType provider, String authorizationCode, String redirectUri);
 
+	default SocialUserProfile fetchUser(
+			LoginType provider,
+			String authorizationCode,
+			String redirectUri,
+			String oauthState
+	) {
+		return fetchUser(provider, authorizationCode, redirectUri);
+	}
+
 	record SocialUserProfile(
 			String socialId,
 			String email,
