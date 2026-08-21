@@ -41,7 +41,8 @@ public class SocialLoginService implements SocialLoginUseCase {
 		SocialOAuthClientPort.SocialUserProfile socialUser = socialOAuthClient.fetchUser(
 				provider,
 				command.authorizationCode(),
-				command.redirectUri()
+				command.redirectUri(),
+				command.oauthState()
 		);
 		if (!StringUtils.hasText(socialUser.socialId())) {
 			throw new BusinessException(ErrorCode.SOCIAL_AUTH_FAILED, "소셜 계정 식별자를 확인할 수 없습니다.");

@@ -2,7 +2,7 @@ spring:
   application:
     name: planwith-fo-member
   datasource:
-    # Local default: infra MySQL on host port 3307. Docker overrides via env/member.env.
+    # Local default: infra MySQL on host port 3307. Local run uses module `.env`.
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3307/member_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8}
     username: ${DB_USERNAME:member_user}
     password: ${DB_PASSWORD:member_pass}
@@ -55,7 +55,7 @@ springdoc:
 
 eureka:
   client:
-    # Docker/AWS 기본 on. 로컬 단독(Eureka 없이 bootRun)은 EUREKA_CLIENT_ENABLED=false
+    # Docker/AWS는 compose에서 EUREKA_CLIENT_ENABLED=true. 로컬 단독은 .env에서 false
     enabled: ${EUREKA_CLIENT_ENABLED:true}
     serviceUrl:
       # Quoted: unquoted http://... is invalid YAML (':' map). Docker DNS default.

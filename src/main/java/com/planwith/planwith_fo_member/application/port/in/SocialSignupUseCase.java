@@ -14,6 +14,7 @@ public interface SocialSignupUseCase {
 	record SocialSignupCommand(
 			String authorizationCode,
 			String redirectUri,
+			String oauthState,
 			String nickname,
 			String profileImage,
 			String profileIntro,

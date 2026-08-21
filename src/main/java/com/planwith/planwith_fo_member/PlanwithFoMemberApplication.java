@@ -10,6 +10,7 @@ import com.planwith.planwith_fo_member.config.EmailProperties;
 import com.planwith.planwith_fo_member.config.EmailVerificationProperties;
 import com.planwith.planwith_fo_member.config.GatewayTrustProperties;
 import com.planwith.planwith_fo_member.config.JwtProperties;
+import com.planwith.planwith_fo_member.config.LocalDotenvLoader;
 import com.planwith.planwith_fo_member.config.MemberKafkaProperties;
 import com.planwith.planwith_fo_member.config.PortOneProperties;
 import com.planwith.planwith_fo_member.config.RefreshCookieProperties;
@@ -31,6 +32,7 @@ import com.planwith.planwith_fo_member.config.SocialOAuthProperties;
 public class PlanwithFoMemberApplication {
 
 	public static void main(String[] args) {
+		LocalDotenvLoader.load("planwith_fo_member");
 		SpringApplication.run(PlanwithFoMemberApplication.class, args);
 	}
 }

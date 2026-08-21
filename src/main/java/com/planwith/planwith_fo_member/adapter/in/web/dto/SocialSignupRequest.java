@@ -18,6 +18,9 @@ public record SocialSignupRequest(
 		@Schema(nullable = true, description = "OAuth redirect URI")
 		String redirectUri,
 
+		@Schema(nullable = true, description = "OAuth authorize 때 사용한 state")
+		String state,
+
 		@Schema(example = "플랜위드")
 		@NotBlank(message = "닉네임은 필수입니다.")
 		@Size(min = 2, max = 10, message = "닉네임은 2자 이상 10자 이하여야 합니다.")

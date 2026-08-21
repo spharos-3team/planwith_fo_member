@@ -28,14 +28,14 @@ public class StubSocialOAuthClient implements SocialOAuthClientPort {
 		}
 		String payload = authorizationCode.substring("stub:".length());
 		String[] parts = payload.split(":", 2);
-		if (parts.length < 2 || !StringUtils.hasText(parts[0]) || !StringUtils.hasText(parts[1])) {
+		if (parts.length < 1 || !StringUtils.hasText(parts[0])) {
 			throw new BusinessException(
 					ErrorCode.SOCIAL_AUTH_FAILED,
 					"스텁 authorizationCode 형식이 올바르지 않습니다. stub:{socialId}:{email}"
 			);
 		}
 		String socialId = parts[0].trim();
-		String email = parts[1].trim();
+		String email = parts.length < 2 || !StringUtils.hasText(parts[1]) ? null : parts[1].trim();
 		return new SocialUserProfile(
 				socialId,
 				email,
