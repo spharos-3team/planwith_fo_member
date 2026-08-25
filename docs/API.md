@@ -6,7 +6,7 @@
 > 공통 응답: `ApiResponse<T>`  
 > 호출 경로: `Frontend → Gateway(:8000) → Member(:8082)` (Access 검증은 Gateway)
 
-최종 갱신: 2026-08-19 (#27 회원 팔로우)
+최종 갱신: 2026-08-25 (#33 로그인 이력)
 
 ---
 
@@ -25,6 +25,7 @@
 | ✅ Done | #17 | 본인인증 실명(`name`) DB·응답 반영 |
 | ✅ Done | #25 | 본인인증 스텁 휴대폰·실명 지정 / 이메일 SMTP 실발송 |
 | ✅ Done | #27 | 회원 팔로우 / 언팔로우 / 목록 / 상태 조회 |
+| ✅ Done | #33 | 로그인 성공 시 `login_history` 저장 |
 
 ---
 
@@ -39,12 +40,12 @@
 | #3 | POST | `/api/v1/auth/phone-verifications` | X | 본인인증 준비 (포트원 SDK) |
 | #3/#17 | POST | `/api/v1/auth/phone-verifications/confirm` | X | 본인인증 완료 확인 (`phoneNumber` + `name`) |
 | #5 | GET | `/api/v1/members/nicknames/availability` | X | 닉네임 중복확인 (2~10자) |
-| #6 | POST | `/api/v1/auth/{provider}/signup` | X | 소셜 회원가입 (비번 없음, 본인인증·닉네임·약관, 직후 토큰) |
-| #7 | POST | `/api/v1/auth/login` | X | 로컬 로그인 |
+| #6/#33 | POST | `/api/v1/auth/{provider}/signup` | X | 소셜 회원가입 (비번 없음, 본인인증·닉네임·약관, 직후 토큰·이력) |
+| #7/#33 | POST | `/api/v1/auth/login` | X | 로컬 로그인 (`login_history` 저장) |
 | #7 | POST | `/api/v1/auth/refresh` | Refresh Cookie | 토큰 재발급 (`/auth/reissue` 별칭) |
 | #7 | POST | `/api/v1/auth/logout` | Refresh Cookie | 로그아웃 (204) |
 | #7 | GET | `/oauth2/jwks` | X | Access Token 공개키 |
-| #8 | POST | `/api/v1/auth/{provider}/login` | X | 소셜 원클릭 로그인 (`isNewMember`) |
+| #8/#33 | POST | `/api/v1/auth/{provider}/login` | X | 소셜 원클릭 로그인 (`isNewMember`, 성공 시 `login_history`) |
 | #9 | POST | `/api/v1/auth/find-email` | X | 아이디 찾기 (본인인증 휴대폰) |
 | #9 | POST | `/api/v1/auth/password/reset-requests` | X | 비밀번호 재설정 코드 발송 (로컬만) |
 | #9 | POST | `/api/v1/auth/password/reset` | X | 비밀번호 재설정 (204, 로컬만) |
@@ -122,6 +123,15 @@
 - Access 검증: Gateway / Member는 발급·JWKS만
 - 소셜 **원클릭 로그인**: `authorizationCode`만 → 기가입 즉시 토큰 / 미가입 `isNewMember=true`
 - 소셜 가입: 비밀번호 없음. `password`는 로컬 전용. 닉네임 **2~10자**
+
+### 로그인 이력 (#33)
+
+- 별도 기록 API 없음. 세션 발급 성공 시 `login_history`에 저장
+- 대상: 로컬 로그인 / 소셜 로그인(기가입) / 소셜 회원가입 직후 세션 발급
+- 제외: 로그인 실패, 미가입 소셜(`isNewMember=true`), 토큰 재발급, 로그아웃
+- `actor_type=USER`, `actor_id=member_id`
+- IP: `X-Forwarded-For`(첫 값) → `X-Real-IP` → `remoteAddr`
+- `device_info`: User-Agent 기준 `Mobile` / `Desktop` / `Tablet` / `Unknown`
 
 ---
 
