@@ -13,6 +13,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import com.planwith.planwith_fo_member.adapter.in.web.dto.ApiResponse;
 import com.planwith.planwith_fo_member.application.exception.BusinessException;
@@ -65,6 +67,20 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiResponse<Void>> handleBadRequest(Exception exception) {
 		return ResponseEntity.badRequest().body(
 				ApiResponse.failure(ErrorCode.INVALID_REQUEST.code(), ErrorCode.INVALID_REQUEST.message(), Map.of())
+		);
+	}
+
+	@ExceptionHandler({
+			MaxUploadSizeExceededException.class,
+			MissingServletRequestPartException.class
+	})
+	public ResponseEntity<ApiResponse<Void>> handleInvalidProfileUpload(Exception exception) {
+		return ResponseEntity.badRequest().body(
+				ApiResponse.failure(
+						ErrorCode.INVALID_PROFILE_IMAGE.code(),
+						ErrorCode.INVALID_PROFILE_IMAGE.message(),
+						Map.of()
+				)
 		);
 	}
 

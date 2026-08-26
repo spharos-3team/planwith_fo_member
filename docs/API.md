@@ -54,7 +54,8 @@
 | #10 | PATCH | `/api/v1/members/me/profile` | O | 위와 동일 (별칭) |
 | #10 | DELETE | `/api/v1/members/me` | O | 회원 탈퇴 (soft → `DELETED`) |
 | #10 | GET | `/api/v1/members/me/profile` | O | 내 프로필 조회 |
-| #10 | POST | `/api/v1/members/me/profile/image` | O | 프로필 이미지 업로드 (stub URL) |
+| #10 | POST | `/api/v1/members/me/profile/image` | O | 프로필 이미지 업로드 (jpg/png/webp, 5MB, DB 저장) |
+| #10 | GET | `/api/v1/members/{memberUuid}/profile-image` | X | 프로필 이미지 바이트 조회 |
 | #10 | GET | `/api/v1/terms/{termUuid}` | X | 약관 상세 |
 | #10 | GET | `/api/v1/members/me/agreements` | O | 내 약관 동의 조회 (화면 로드용) |
 | #10 | POST | `/api/v1/members/me/agreements` | O | 선택 약관만 단독 변경 (보조) |
@@ -92,7 +93,7 @@
 - 비밀번호: **로컬만**. 소셜 → `PASSWORD_CHANGE_NOT_ALLOWED_FOR_SOCIAL`
 - 약관: **선택만** 변경 가능. 필수 변경 → `REQUIRED_TERM_NOT_MODIFIABLE`
 - `POST .../agreements`, `PATCH .../password`는 단독 수정용 보조 API
-- 프로필 이미지: 400×400, jpg/png/webp, 2MB. S3 전 단계로 `stub://profiles/{uuid}.ext` 저장
+- 프로필 이미지: jpg/png/webp, 5MB. `member_profile_images` LONGBLOB 저장. 프로필 URL은 `/api/v1/members/{memberUuid}/profile-image`
 - Gateway Trust: `GATEWAY_INTERNAL_TOKEN` + `GATEWAY_TRUST_CHECK_ENABLED` (로컬 기본 `false`)
 
 ### 팔로우 (#27)
