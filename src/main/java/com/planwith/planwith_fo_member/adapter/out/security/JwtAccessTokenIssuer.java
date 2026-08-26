@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -12,7 +12,8 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.stereotype.Component;
 
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.nimbusds.jose.proc.SecurityContext;
 import com.planwith.planwith_fo_member.application.port.out.AccessTokenIssuerPort;
 import com.planwith.planwith_fo_member.config.JwtProperties;
 
@@ -25,9 +26,11 @@ public class JwtAccessTokenIssuer implements AccessTokenIssuerPort {
 	private final JwtProperties properties;
 	private final JwtEncoder jwtEncoder;
 
-	public JwtAccessTokenIssuer(JwtProperties properties, JwtRsaKeyProvider keyProvider) {
+	public JwtAccessTokenIssuer(JwtProperties properties, JwtSecretKeyProvider keyProvider) {
 		this.properties = properties;
-		this.jwtEncoder = new NimbusJwtEncoder(new ImmutableJWKSet<>(new com.nimbusds.jose.jwk.JWKSet(keyProvider.rsaKey())));
+		this.jwtEncoder = new NimbusJwtEncoder(
+				new ImmutableSecret<SecurityContext>(keyProvider.secretKey())
+		);
 	}
 
 	@Override
@@ -36,9 +39,7 @@ public class JwtAccessTokenIssuer implements AccessTokenIssuerPort {
 		Instant expiresAt = now.plus(properties.accessTokenTtl());
 		String jti = UUID.randomUUID().toString();
 
-		JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256)
-				.keyId(keyProviderKeyId())
-				.build();
+		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
 
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 				.issuer(properties.issuer())
@@ -56,11 +57,5 @@ public class JwtAccessTokenIssuer implements AccessTokenIssuerPort {
 		String token = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
 		long expiresIn = Math.max(1L, properties.accessTokenTtl().toSeconds());
 		return new IssuedAccessToken(token, expiresIn, sessionId, DEFAULT_ROLES, DEFAULT_SCOPES);
-	}
-
-	private String keyProviderKeyId() {
-		return properties.keyId() == null || properties.keyId().isBlank()
-				? "planwith-member-local"
-				: properties.keyId();
 	}
 }

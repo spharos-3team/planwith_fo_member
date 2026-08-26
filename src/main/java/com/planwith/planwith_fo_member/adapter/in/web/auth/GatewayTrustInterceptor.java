@@ -46,8 +46,7 @@ public class GatewayTrustInterceptor implements HandlerInterceptor {
 	}
 
 	private boolean isExcluded(String uri) {
-		return uri.equals("/oauth2/jwks")
-				|| uri.equals("/actuator/health")
+		return uri.equals("/actuator/health")
 				|| uri.equals("/actuator/health/liveness")
 				|| uri.equals("/actuator/health/readiness");
 	}

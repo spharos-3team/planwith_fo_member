@@ -85,9 +85,7 @@ app:
   jwt:
     issuer: ${JWT_ISSUER:http://localhost:8082}
     audience: ${JWT_AUDIENCE:planwith-api}
-    key-id: ${JWT_KEY_ID:planwith-member-local}
-    private-key-path: ${JWT_PRIVATE_KEY_PATH:}
-    public-key-path: ${JWT_PUBLIC_KEY_PATH:}
+    secret: ${JWT_SECRET:}
     access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
     refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:14d}
   refresh-cookie:

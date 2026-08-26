@@ -44,7 +44,6 @@
 | #7/#33 | POST | `/api/v1/auth/login` | X | 로컬 로그인 (`login_history` 저장) |
 | #7 | POST | `/api/v1/auth/refresh` | Refresh Cookie | 토큰 재발급 (`/auth/reissue` 별칭) |
 | #7 | POST | `/api/v1/auth/logout` | Refresh Cookie | 로그아웃 (204) |
-| #7 | GET | `/oauth2/jwks` | X | Access Token 공개키 |
 | #8/#33 | POST | `/api/v1/auth/{provider}/login` | X | 소셜 원클릭 로그인 (`isNewMember`, 성공 시 `login_history`) |
 | #9 | POST | `/api/v1/auth/find-email` | X | 아이디 찾기 (본인인증 휴대폰) |
 | #9 | POST | `/api/v1/auth/password/reset-requests` | X | 비밀번호 재설정 코드 발송 (로컬만) |
@@ -225,12 +224,11 @@ MAIL_FROM=your@gmail.com
 ### 4) JWT
 
 ```env
-JWT_PRIVATE_KEY_PATH=/path/to/private.pem
-JWT_PUBLIC_KEY_PATH=/path/to/public.pem
-JWT_KEY_ID=planwith-member-...
+JWT_SECRET=member-and-gateway-shared-random-secret-at-least-32-bytes
 ```
 
-확인: `GET /oauth2/jwks`의 kid가 고정되고, 재시작 후에도 기존 Access Token 검증이 깨지지 않으면 OK.
+Member와 Gateway에 동일한 32바이트 이상의 랜덤 시크릿을 설정한다. BO Management의 별도 `JWT_SECRET`과 재사용하지 않는다.
+변경 후 발급된 Access Token의 `alg`가 `HS256`이고 Gateway의 보호 API에서 검증되면 OK.
 
 ### 5) Gateway Trust
 

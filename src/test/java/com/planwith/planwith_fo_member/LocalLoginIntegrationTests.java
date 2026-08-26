@@ -1,6 +1,5 @@
 package com.planwith.planwith_fo_member;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -8,6 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
+import com.jayway.jsonpath.JsonPath;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +69,7 @@ class LocalLoginIntegrationTests {
 		String email = "login-ok@example.com";
 		signup(email, "로그인유저");
 
-		mockMvc.perform(post("/api/v1/auth/login")
+		MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{"email":"%s","password":"%s"}
@@ -79,7 +82,23 @@ class LocalLoginIntegrationTests {
 				.andExpect(jsonPath("$.data.user.userId").isNotEmpty())
 				.andExpect(jsonPath("$.data.user.roles[0]").value("USER"))
 				.andExpect(cookie().exists("refresh_token"))
-				.andExpect(cookie().httpOnly("refresh_token", true));
+				.andExpect(cookie().httpOnly("refresh_token", true))
+				.andReturn();
+
+		String accessToken = JsonPath.read(result.getResponse().getContentAsString(), "$.data.accessToken");
+		SignedJWT signedJwt = SignedJWT.parse(accessToken);
+		org.assertj.core.api.Assertions.assertThat(signedJwt.getHeader().getAlgorithm()).isEqualTo(JWSAlgorithm.HS256);
+		org.assertj.core.api.Assertions.assertThat(
+				signedJwt.verify(new MACVerifier("test-member-gateway-jwt-secret-at-least-32-bytes"))
+		).isTrue();
+		org.assertj.core.api.Assertions.assertThat(signedJwt.getJWTClaimsSet().getIssuer())
+				.isEqualTo("http://localhost:8082");
+		org.assertj.core.api.Assertions.assertThat(signedJwt.getJWTClaimsSet().getAudience())
+				.containsExactly("planwith-api");
+		org.assertj.core.api.Assertions.assertThat(signedJwt.getJWTClaimsSet().getStringListClaim("roles"))
+				.containsExactly("USER");
+		org.assertj.core.api.Assertions.assertThat(signedJwt.getJWTClaimsSet().getStringClaim("session_id"))
+				.isNotBlank();
 	}
 
 	@Test
@@ -130,15 +149,6 @@ class LocalLoginIntegrationTests {
 
 		mockMvc.perform(post("/api/v1/auth/refresh").cookie(cookie))
 				.andExpect(status().isUnauthorized());
-	}
-
-	@Test
-	void jwksReturnsPublicKey() throws Exception {
-		mockMvc.perform(get("/oauth2/jwks"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.keys").isArray())
-				.andExpect(jsonPath("$.keys[0].kty").value("RSA"))
-				.andExpect(jsonPath("$.keys[0].kid").value("test-key"));
 	}
 
 	private Cookie loginCookie(String email) throws Exception {

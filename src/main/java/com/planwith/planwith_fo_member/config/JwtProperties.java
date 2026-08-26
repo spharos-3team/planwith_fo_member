@@ -8,9 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record JwtProperties(
 		String issuer,
 		String audience,
-		String keyId,
-		String privateKeyPath,
-		String publicKeyPath,
+		String secret,
 		Duration accessTokenTtl,
 		Duration refreshTokenTtl
 ) {
