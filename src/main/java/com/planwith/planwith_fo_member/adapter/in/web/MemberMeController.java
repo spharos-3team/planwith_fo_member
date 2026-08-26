@@ -34,6 +34,7 @@ import com.planwith.planwith_fo_member.application.port.in.ChangePasswordUseCase
 import com.planwith.planwith_fo_member.application.port.in.GetMemberInternalUseCase;
 import com.planwith.planwith_fo_member.application.port.in.GetMyMemberUseCase;
 import com.planwith.planwith_fo_member.application.port.in.GetMyProfileUseCase;
+import com.planwith.planwith_fo_member.application.port.in.GetProfileImageUseCase;
 import com.planwith.planwith_fo_member.application.port.in.GetPublicProfileUseCase;
 import com.planwith.planwith_fo_member.application.port.in.MemberAgreementUseCase;
 import com.planwith.planwith_fo_member.application.port.in.UpdateMyPageUseCase;
@@ -62,6 +63,7 @@ public class MemberMeController {
 	private final WithdrawMemberUseCase withdrawMemberUseCase;
 	private final GetMyProfileUseCase getMyProfileUseCase;
 	private final UploadProfileImageUseCase uploadProfileImageUseCase;
+	private final GetProfileImageUseCase getProfileImageUseCase;
 	private final MemberAgreementUseCase memberAgreementUseCase;
 	private final GetPublicProfileUseCase getPublicProfileUseCase;
 	private final GetMemberInternalUseCase getMemberInternalUseCase;
@@ -74,6 +76,7 @@ public class MemberMeController {
 			WithdrawMemberUseCase withdrawMemberUseCase,
 			GetMyProfileUseCase getMyProfileUseCase,
 			UploadProfileImageUseCase uploadProfileImageUseCase,
+			GetProfileImageUseCase getProfileImageUseCase,
 			MemberAgreementUseCase memberAgreementUseCase,
 			GetPublicProfileUseCase getPublicProfileUseCase,
 			GetMemberInternalUseCase getMemberInternalUseCase
@@ -85,6 +88,7 @@ public class MemberMeController {
 		this.withdrawMemberUseCase = withdrawMemberUseCase;
 		this.getMyProfileUseCase = getMyProfileUseCase;
 		this.uploadProfileImageUseCase = uploadProfileImageUseCase;
+		this.getProfileImageUseCase = getProfileImageUseCase;
 		this.memberAgreementUseCase = memberAgreementUseCase;
 		this.getPublicProfileUseCase = getPublicProfileUseCase;
 		this.getMemberInternalUseCase = getMemberInternalUseCase;
@@ -131,12 +135,21 @@ public class MemberMeController {
 	}
 
 	@PostMapping(value = "/members/me/profile/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@Operation(summary = "프로필 이미지 업로드 (400x400, jpg/png/webp, stub URL)")
+	@Operation(summary = "프로필 이미지 업로드 (jpg/png/webp, 5MB)")
 	public ResponseEntity<ApiResponse<MemberProfileResponse>> uploadProfileImage(
 			@RequestPart("file") MultipartFile file
 	) {
 		UUID memberUuid = authContextResolver.requireUser().userId();
 		return ResponseEntity.ok(ApiResponse.success(toProfileResponse(uploadProfileImageUseCase.upload(memberUuid, file))));
+	}
+
+	@GetMapping("/members/{memberUuid}/profile-image")
+	@Operation(summary = "프로필 이미지 조회", security = {})
+	public ResponseEntity<byte[]> getProfileImage(@PathVariable UUID memberUuid) {
+		GetProfileImageUseCase.Result image = getProfileImageUseCase.get(memberUuid);
+		return ResponseEntity.ok()
+				.contentType(MediaType.parseMediaType(image.contentType()))
+				.body(image.bytes());
 	}
 
 	@GetMapping("/members/me/agreements")

@@ -1,7 +1,7 @@
 package com.planwith.planwith_fo_member.application.member;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -28,6 +28,7 @@ import com.planwith.planwith_fo_member.application.port.in.UploadProfileImageUse
 import com.planwith.planwith_fo_member.application.port.out.FollowRepositoryPort;
 import com.planwith.planwith_fo_member.application.port.out.MemberRepositoryPort;
 import com.planwith.planwith_fo_member.application.port.out.PhoneVerificationStorePort;
+import com.planwith.planwith_fo_member.application.port.out.ProfileImageStoragePort;
 import com.planwith.planwith_fo_member.domain.member.Member;
 import com.planwith.planwith_fo_member.domain.member.MemberProfile;
 import com.planwith.planwith_fo_member.domain.member.MemberStatus;
@@ -47,8 +48,7 @@ public class MemberProfileService implements
 			"image/png",
 			"image/webp"
 	);
-	private static final long MAX_BYTES = 2 * 1024 * 1024;
-	private static final int REQUIRED_SIZE = 400;
+	private static final long MAX_BYTES = 5 * 1024 * 1024;
 	private static final int MAX_PAGE_SIZE = 50;
 
 	private final MemberRepositoryPort memberRepository;
@@ -58,6 +58,7 @@ public class MemberProfileService implements
 	private final MemberAgreementUseCase memberAgreementUseCase;
 	private final ChangePasswordUseCase changePasswordUseCase;
 	private final GetMyMemberUseCase getMyMemberUseCase;
+	private final ProfileImageStoragePort profileImageStoragePort;
 
 	public MemberProfileService(
 			MemberRepositoryPort memberRepository,
@@ -66,7 +67,8 @@ public class MemberProfileService implements
 			PhoneVerificationService phoneVerificationService,
 			MemberAgreementUseCase memberAgreementUseCase,
 			ChangePasswordUseCase changePasswordUseCase,
-			GetMyMemberUseCase getMyMemberUseCase
+			GetMyMemberUseCase getMyMemberUseCase,
+			ProfileImageStoragePort profileImageStoragePort
 	) {
 		this.memberRepository = memberRepository;
 		this.followRepository = followRepository;
@@ -75,6 +77,7 @@ public class MemberProfileService implements
 		this.memberAgreementUseCase = memberAgreementUseCase;
 		this.changePasswordUseCase = changePasswordUseCase;
 		this.getMyMemberUseCase = getMyMemberUseCase;
+		this.profileImageStoragePort = profileImageStoragePort;
 	}
 
 	@Override
@@ -167,34 +170,36 @@ public class MemberProfileService implements
 			throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE, "이미지 파일이 필요합니다.");
 		}
 		if (file.getSize() > MAX_BYTES) {
-			throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE, "이미지 용량은 2MB 이하여야 합니다.");
+			throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE, "이미지 용량은 5MB 이하여야 합니다.");
 		}
 		String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
 		if (!ALLOWED_CONTENT_TYPES.contains(contentType)) {
 			throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE, "jpg/jpeg/png/webp만 업로드할 수 있습니다.");
 		}
-
+		byte[] bytes;
+		try {
+			bytes = file.getBytes();
+		}
+		catch (IOException exception) {
+			throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE);
+		}
 		if (!"image/webp".equals(contentType)) {
 			try {
-				BufferedImage image = ImageIO.read(file.getInputStream());
-				if (image == null) {
+				if (ImageIO.read(new ByteArrayInputStream(bytes)) == null) {
 					throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE);
 				}
-				if (image.getWidth() != REQUIRED_SIZE || image.getHeight() != REQUIRED_SIZE) {
-					throw new BusinessException(
-							ErrorCode.INVALID_PROFILE_IMAGE,
-							"프로필 이미지는 400x400 이어야 합니다."
-					);
-				}
 			}
-			catch (IOException exception) {
+			catch (BusinessException exception) {
+				throw exception;
+			}
+			catch (Exception exception) {
 				throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE);
 			}
 		}
-
-		String extension = extensionOf(contentType);
-		String stubUrl = "stub://profiles/" + UUID.randomUUID() + "." + extension;
-		memberRepository.updateProfileImage(memberUuid, stubUrl);
+		String storedType = storedContentType(contentType);
+		profileImageStoragePort.save(memberUuid, storedType, bytes);
+		String publicUrl = "/api/v1/members/" + memberUuid + "/profile-image";
+		memberRepository.updateProfileImage(memberUuid, publicUrl);
 		return toResult(requireProfile(memberUuid));
 	}
 
@@ -275,11 +280,11 @@ public class MemberProfileService implements
 		);
 	}
 
-	private String extensionOf(String contentType) {
+	private String storedContentType(String contentType) {
 		return switch (contentType) {
-			case "image/png" -> "png";
-			case "image/webp" -> "webp";
-			default -> "jpg";
+			case "image/png" -> "image/png";
+			case "image/webp" -> "image/webp";
+			default -> "image/jpeg";
 		};
 	}
 }

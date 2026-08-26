@@ -26,6 +26,12 @@ class ErrorCodeTest {
 	}
 
 	@Test
+	void missingResourceCodesUseHttp404() {
+		assertThat(ErrorCode.MEMBER_NOT_FOUND.status()).isEqualTo(HttpStatus.NOT_FOUND);
+		assertThat(ErrorCode.PROFILE_IMAGE_NOT_FOUND.status()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	@Test
 	void emailSendFailedUsesHttp500() {
 		assertThat(ErrorCode.EMAIL_SEND_FAILED.status()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
 	}

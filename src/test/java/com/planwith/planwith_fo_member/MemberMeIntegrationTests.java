@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -111,17 +113,23 @@ class MemberMeIntegrationTests {
 				.andExpect(jsonPath("$.data.profile.profileSpecialBorder").value(false))
 				.andExpect(jsonPath("$.data.agreements[?(@.termUuid=='%s')].agreed".formatted(MARKETING_TERM)).value(true));
 
+		byte[] png = pngBytes(120, 80);
 		MockMultipartFile file = new MockMultipartFile(
 				"file",
 				"avatar.png",
 				"image/png",
-				pngBytes(400, 400)
+				png
 		);
+		String imagePath = "/api/v1/members/" + memberUuid + "/profile-image";
 		mockMvc.perform(multipart("/api/v1/members/me/profile/image")
 						.file(file)
 						.header("X-Auth-User-Id", memberUuid))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.profileImage").value(org.hamcrest.Matchers.startsWith("stub://profiles/")));
+				.andExpect(jsonPath("$.data.profileImage").value(imagePath));
+		mockMvc.perform(get(imagePath))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Content-Type", "image/png"))
+				.andExpect(content().bytes(png));
 
 		mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -184,6 +192,30 @@ class MemberMeIntegrationTests {
 								{"email":"%s","password":"Password2!"}
 								""".formatted(email)))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void missingProfileImageIsNotFound() throws Exception {
+		String memberUuid = signupAndGetUuid("me-no-image@example.com", "이미지구함");
+		mockMvc.perform(get("/api/v1/members/{memberUuid}/profile-image", memberUuid))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.error.code").value("PROFILE_IMAGE_NOT_FOUND"));
+	}
+
+	@Test
+	void uploadCorruptJpegIsBadRequest() throws Exception {
+		String memberUuid = signupAndGetUuid("me-bad-image@example.com", "깨진이미지");
+		MockMultipartFile file = new MockMultipartFile(
+				"file",
+				"avatar.jpg",
+				"image/jpeg",
+				new byte[] {(byte) 0xFF, (byte) 0xD8, 0x00, 0x01}
+		);
+		mockMvc.perform(multipart("/api/v1/members/me/profile/image")
+						.file(file)
+						.header("X-Auth-User-Id", memberUuid))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("INVALID_PROFILE_IMAGE"));
 	}
 
 	@Test
