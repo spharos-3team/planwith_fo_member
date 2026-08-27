@@ -55,7 +55,7 @@ app:
     grade-changed-topic: planwith.grade.changed
   email-verification:
     code-ttl-seconds: 600
-    verified-ttl-seconds: 1800
+    verified-ttl-seconds: 7200
     code-length: 6
   email:
     stub-enabled: true
@@ -65,7 +65,7 @@ app:
     channel-key: channel-key-test
     api-secret: test-secret
     api-base-url: https://api.portone.io
-    verified-ttl-seconds: 1800
+    verified-ttl-seconds: 7200
     stub-enabled: true
   social:
     stub-enabled: true

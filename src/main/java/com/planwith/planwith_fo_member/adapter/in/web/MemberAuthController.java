@@ -157,7 +157,8 @@ public class MemberAuthController {
 		var result = confirmEmailVerificationUseCase.confirm(request.email(), request.code());
 		return ResponseEntity.ok(ApiResponse.success(new EmailVerificationConfirmResponse(
 				result.email(),
-				result.verified()
+				result.verified(),
+				result.verifiedExpiresInSeconds()
 		)));
 	}
 

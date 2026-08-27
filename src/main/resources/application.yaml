@@ -112,8 +112,10 @@ app:
     follow-removed-topic: ${MEMBER_TOPIC_FOLLOW_REMOVED:planwith.follow.removed}
     grade-changed-topic: ${MEMBER_TOPIC_GRADE_CHANGED:planwith.grade.changed}
   email-verification:
+    # OTP 유효시간(확인 전). 확인 후 가입 허용 시간과는 별개다.
     code-ttl-seconds: ${EMAIL_VERIFICATION_CODE_TTL_SECONDS:600}
-    verified-ttl-seconds: ${EMAIL_VERIFICATION_VERIFIED_TTL_SECONDS:1800}
+    # 확인 후 회원가입(프로필 작성)까지 유지. 기본 2시간.
+    verified-ttl-seconds: ${EMAIL_VERIFICATION_VERIFIED_TTL_SECONDS:7200}
     code-length: ${EMAIL_VERIFICATION_CODE_LENGTH:6}
   email:
     # true: 서버 로그에 코드 출력 (테스트/로컬 기본). false: SMTP 실발송.
@@ -125,7 +127,7 @@ app:
     channel-key: ${PORTONE_CHANNEL_KEY:channel-key-local-stub}
     api-secret: ${PORTONE_API_SECRET:}
     api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
-    verified-ttl-seconds: ${PORTONE_VERIFIED_TTL_SECONDS:1800}
+    verified-ttl-seconds: ${PORTONE_VERIFIED_TTL_SECONDS:7200}
     # true: 포트원 실호출 없이 스텁 (로컬/테스트). 운영은 false + 시크릿 설정.
     stub-enabled: ${PORTONE_STUB_ENABLED:true}
   social:

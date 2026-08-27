@@ -4,6 +4,6 @@ public interface ConfirmEmailVerificationUseCase {
 
 	ConfirmEmailVerificationResult confirm(String email, String code);
 
-	record ConfirmEmailVerificationResult(String email, boolean verified) {
+	record ConfirmEmailVerificationResult(String email, boolean verified, int verifiedExpiresInSeconds) {
 	}
 }
