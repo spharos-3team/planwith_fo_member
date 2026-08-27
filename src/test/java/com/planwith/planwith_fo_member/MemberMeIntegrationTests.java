@@ -1,17 +1,18 @@
 package com.planwith.planwith_fo_member;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.UUID;
 
@@ -126,10 +127,13 @@ class MemberMeIntegrationTests {
 						.header("X-Auth-User-Id", memberUuid))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.profileImage").value(imagePath));
-		mockMvc.perform(get(imagePath))
+		MvcResult imageResult = mockMvc.perform(get(imagePath))
 				.andExpect(status().isOk())
 				.andExpect(header().string("Content-Type", "image/png"))
-				.andExpect(content().bytes(png));
+				.andReturn();
+		BufferedImage stored = ImageIO.read(new ByteArrayInputStream(imageResult.getResponse().getContentAsByteArray()));
+		assertThat(stored.getWidth()).isEqualTo(512);
+		assertThat(stored.getHeight()).isEqualTo(512);
 
 		mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -200,6 +204,41 @@ class MemberMeIntegrationTests {
 		mockMvc.perform(get("/api/v1/members/{memberUuid}/profile-image", memberUuid))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.error.code").value("PROFILE_IMAGE_NOT_FOUND"));
+	}
+
+	@Test
+	void uploadGifIsBadRequest() throws Exception {
+		String memberUuid = signupAndGetUuid("me-gif@example.com", "지프유저");
+		MockMultipartFile file = new MockMultipartFile(
+				"file",
+				"avatar.gif",
+				"image/gif",
+				pngBytes(64, 64)
+		);
+		mockMvc.perform(multipart("/api/v1/members/me/profile/image")
+						.file(file)
+						.header("X-Auth-User-Id", memberUuid))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("INVALID_PROFILE_IMAGE"));
+	}
+
+	@Test
+	void uploadOversizedFileIsBadRequest() throws Exception {
+		String memberUuid = signupAndGetUuid("me-big-image@example.com", "큰이미지");
+		byte[] oversized = new byte[(int) (5 * 1024 * 1024) + 1];
+		oversized[0] = (byte) 0xFF;
+		oversized[1] = (byte) 0xD8;
+		MockMultipartFile file = new MockMultipartFile(
+				"file",
+				"avatar.jpg",
+				"image/jpeg",
+				oversized
+		);
+		mockMvc.perform(multipart("/api/v1/members/me/profile/image")
+						.file(file)
+						.header("X-Auth-User-Id", memberUuid))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("INVALID_PROFILE_IMAGE"));
 	}
 
 	@Test

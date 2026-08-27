@@ -39,7 +39,7 @@ public class StubSocialOAuthClient implements SocialOAuthClientPort {
 		return new SocialUserProfile(
 				socialId,
 				email,
-				null,
+				"https://example.com/social-picture.png",
 				provider.name().toLowerCase() + "-user"
 		);
 	}

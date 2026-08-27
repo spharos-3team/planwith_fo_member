@@ -1,13 +1,8 @@
 package com.planwith.planwith_fo_member.application.member;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
-
-import javax.imageio.ImageIO;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,13 +37,7 @@ public class MemberProfileService implements
 		GetPublicProfileUseCase,
 		ListMembersUseCase {
 
-	private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
-			"image/jpeg",
-			"image/jpg",
-			"image/png",
-			"image/webp"
-	);
-	private static final long MAX_BYTES = 5 * 1024 * 1024;
+	private static final long MAX_BYTES = ProfileImageProcessor.MAX_BYTES;
 	private static final int MAX_PAGE_SIZE = 50;
 
 	private final MemberRepositoryPort memberRepository;
@@ -137,7 +126,7 @@ public class MemberProfileService implements
 			memberRepository.updateProfile(
 					memberUuid,
 					command.nickname() == null ? null : nextNickname,
-					command.profileImage(),
+					command.profileImage() == null ? null : MemberProfile.sanitizeProfileImage(command.profileImage()),
 					command.profileIntro() == null ? null : command.profileIntro().trim()
 			);
 		}
@@ -172,10 +161,6 @@ public class MemberProfileService implements
 		if (file.getSize() > MAX_BYTES) {
 			throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE, "이미지 용량은 5MB 이하여야 합니다.");
 		}
-		String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
-		if (!ALLOWED_CONTENT_TYPES.contains(contentType)) {
-			throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE, "jpg/jpeg/png/webp만 업로드할 수 있습니다.");
-		}
 		byte[] bytes;
 		try {
 			bytes = file.getBytes();
@@ -183,21 +168,8 @@ public class MemberProfileService implements
 		catch (IOException exception) {
 			throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE);
 		}
-		if (!"image/webp".equals(contentType)) {
-			try {
-				if (ImageIO.read(new ByteArrayInputStream(bytes)) == null) {
-					throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE);
-				}
-			}
-			catch (BusinessException exception) {
-				throw exception;
-			}
-			catch (Exception exception) {
-				throw new BusinessException(ErrorCode.INVALID_PROFILE_IMAGE);
-			}
-		}
-		String storedType = storedContentType(contentType);
-		profileImageStoragePort.save(memberUuid, storedType, bytes);
+		ProfileImageProcessor.Processed processed = ProfileImageProcessor.process(file.getContentType(), bytes);
+		profileImageStoragePort.save(memberUuid, processed.contentType(), processed.bytes());
 		String publicUrl = "/api/v1/members/" + memberUuid + "/profile-image";
 		memberRepository.updateProfileImage(memberUuid, publicUrl);
 		return toResult(requireProfile(memberUuid));
@@ -278,13 +250,5 @@ public class MemberProfileService implements
 				profile.isProfileBadge(),
 				profile.isProfileSpecialBorder()
 		);
-	}
-
-	private String storedContentType(String contentType) {
-		return switch (contentType) {
-			case "image/png" -> "image/png";
-			case "image/webp" -> "image/webp";
-			default -> "image/jpeg";
-		};
 	}
 }
