@@ -96,9 +96,6 @@ public class SocialSignupService implements SocialSignupUseCase {
 		);
 
 		String profileImage = blankToNull(command.profileImage());
-		if (profileImage == null) {
-			profileImage = blankToNull(socialUser.profileImageUrl());
-		}
 
 		UUID memberUuid = UUID.randomUUID();
 		Instant createdAt = Instant.now();

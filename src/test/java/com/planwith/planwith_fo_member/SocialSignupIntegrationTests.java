@@ -1,5 +1,6 @@
 package com.planwith.planwith_fo_member;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -7,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.planwith.planwith_fo_member.adapter.out.persistence.terms.TermsJpaEntity;
 import com.planwith.planwith_fo_member.adapter.out.persistence.terms.TermsJpaRepository;
@@ -32,6 +37,9 @@ class SocialSignupIntegrationTests {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	@Autowired
 	private TermsJpaRepository termsJpaRepository;
@@ -55,7 +63,7 @@ class SocialSignupIntegrationTests {
 	void socialSignupSucceedsWithStubCode() throws Exception {
 		verifyPhone(PHONE);
 
-		mockMvc.perform(post("/api/v1/auth/google/signup")
+		MvcResult result = mockMvc.perform(post("/api/v1/auth/google/signup")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(signupBody("stub:google-1001:social1@example.com", "소셜유저1")))
 				.andExpect(status().isCreated())
@@ -64,7 +72,18 @@ class SocialSignupIntegrationTests {
 				.andExpect(jsonPath("$.data.nickname").value("소셜유저1"))
 				.andExpect(jsonPath("$.data.memberUuid").isNotEmpty())
 				.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
-				.andExpect(cookie().exists("refresh_token"));
+				.andExpect(cookie().exists("refresh_token"))
+				.andReturn();
+
+		String memberUuid = objectMapper.readTree(result.getResponse().getContentAsString())
+				.path("data")
+				.path("memberUuid")
+				.asText();
+		mockMvc.perform(get("/api/v1/members/me/profile")
+						.header("X-Auth-User-Id", memberUuid))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.nickname").value("소셜유저1"))
+				.andExpect(jsonPath("$.data.profileImage").value(Matchers.nullValue()));
 	}
 
 	@Test

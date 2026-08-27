@@ -70,15 +70,23 @@ public class GlobalExceptionHandler {
 		);
 	}
 
-	@ExceptionHandler({
-			MaxUploadSizeExceededException.class,
-			MissingServletRequestPartException.class
-	})
-	public ResponseEntity<ApiResponse<Void>> handleInvalidProfileUpload(Exception exception) {
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException exception) {
 		return ResponseEntity.badRequest().body(
 				ApiResponse.failure(
 						ErrorCode.INVALID_PROFILE_IMAGE.code(),
-						ErrorCode.INVALID_PROFILE_IMAGE.message(),
+						"이미지 용량은 5MB 이하여야 합니다.",
+						Map.of()
+				)
+		);
+	}
+
+	@ExceptionHandler(MissingServletRequestPartException.class)
+	public ResponseEntity<ApiResponse<Void>> handleMissingUploadPart(MissingServletRequestPartException exception) {
+		return ResponseEntity.badRequest().body(
+				ApiResponse.failure(
+						ErrorCode.INVALID_PROFILE_IMAGE.code(),
+						"이미지 파일이 필요합니다.",
 						Map.of()
 				)
 		);

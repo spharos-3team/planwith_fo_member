@@ -1,5 +1,6 @@
 package com.planwith.planwith_fo_member.domain.member;
 
+import java.util.Locale;
 import java.util.UUID;
 
 public class MemberProfile {
@@ -39,7 +40,7 @@ public class MemberProfile {
 		this.memberId = memberId;
 		this.memberUuid = memberUuid;
 		this.nickname = nickname;
-		this.profileImage = profileImage;
+		this.profileImage = sanitizeProfileImage(profileImage);
 		this.profileIntro = profileIntro;
 		this.grade = grade;
 		this.profileBadge = profileBadge;
@@ -76,5 +77,17 @@ public class MemberProfile {
 
 	public boolean isProfileSpecialBorder() {
 		return profileSpecialBorder;
+	}
+
+	public static String sanitizeProfileImage(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		String trimmed = value.trim();
+		String lower = trimmed.toLowerCase(Locale.ROOT);
+		if (lower.startsWith("http://") || lower.startsWith("https://")) {
+			return null;
+		}
+		return trimmed;
 	}
 }

@@ -6,7 +6,7 @@
 > 공통 응답: `ApiResponse<T>`  
 > 호출 경로: `Frontend → Gateway(:8000) → Member(:8082)` (Access 검증은 Gateway)
 
-최종 갱신: 2026-08-25 (#33 로그인 이력)
+최종 갱신: 2026-08-27 (#38 프로필 이미지 규칙)
 
 ---
 
@@ -53,7 +53,7 @@
 | #10 | PATCH | `/api/v1/members/me/profile` | O | 위와 동일 (별칭) |
 | #10 | DELETE | `/api/v1/members/me` | O | 회원 탈퇴 (soft → `DELETED`) |
 | #10 | GET | `/api/v1/members/me/profile` | O | 내 프로필 조회 |
-| #10 | POST | `/api/v1/members/me/profile/image` | O | 프로필 이미지 업로드 (jpg/png/webp, 5MB, DB 저장) |
+| #10 | POST | `/api/v1/members/me/profile/image` | O | 프로필 이미지 업로드 (jpg/jpeg/png/webp, 5MB, 512~1024px, DB 저장) |
 | #10 | GET | `/api/v1/members/{memberUuid}/profile-image` | X | 프로필 이미지 바이트 조회 |
 | #10 | GET | `/api/v1/terms/{termUuid}` | X | 약관 상세 |
 | #10 | GET | `/api/v1/members/me/agreements` | O | 내 약관 동의 조회 (화면 로드용) |
@@ -92,7 +92,7 @@
 - 비밀번호: **로컬만**. 소셜 → `PASSWORD_CHANGE_NOT_ALLOWED_FOR_SOCIAL`
 - 약관: **선택만** 변경 가능. 필수 변경 → `REQUIRED_TERM_NOT_MODIFIABLE`
 - `POST .../agreements`, `PATCH .../password`는 단독 수정용 보조 API
-- 프로필 이미지: jpg/png/webp, 5MB. `member_profile_images` LONGBLOB 저장. 프로필 URL은 `/api/v1/members/{memberUuid}/profile-image`
+- 프로필 이미지: JPG/JPEG/PNG/WebP, 최대 5MB, MIME+매직바이트+디코드 검증. 저장 크기는 512~1024px 정사각형. `member_profile_images` LONGBLOB 저장. 프로필 URL은 `/api/v1/members/{memberUuid}/profile-image`. 미업로드·소셜 제공자 사진은 null (닉네임 첫 글자 기본 아바타)
 - Gateway Trust: `GATEWAY_INTERNAL_TOKEN` + `GATEWAY_TRUST_CHECK_ENABLED` (로컬 기본 `false`)
 
 ### 팔로우 (#27)
