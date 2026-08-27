@@ -68,7 +68,11 @@ public class EmailVerificationService implements SendEmailVerificationUseCase, C
 
 		Instant verifiedUntil = Instant.now().plusSeconds(properties.verifiedTtlSeconds());
 		verificationStore.markVerified(normalizedEmail, verifiedUntil);
-		return new ConfirmEmailVerificationResult(normalizedEmail, true);
+		return new ConfirmEmailVerificationResult(
+				normalizedEmail,
+				true,
+				properties.verifiedTtlSeconds()
+		);
 	}
 
 	private String generateCode(int length) {

@@ -294,7 +294,21 @@ class MemberSignupIntegrationTests {
 								{"email": "%s", "code": "%s"}
 								""".formatted(email, code)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.verified").value(true));
+				.andExpect(jsonPath("$.data.verified").value(true))
+				.andExpect(jsonPath("$.data.verifiedExpiresInSeconds").value(7200));
+	}
+
+	@Test
+	void signupFailsWhenEmailVerificationExpired() throws Exception {
+		String email = "expired-verified@example.com";
+		emailVerificationStorePort.markVerified(email, java.time.Instant.now().minusSeconds(1));
+		verifyPhone(DEFAULT_PHONE);
+
+		mockMvc.perform(post("/api/v1/members")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(signupBody(email, "만료인증", DEFAULT_PHONE, true, true, false)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("EMAIL_NOT_VERIFIED"));
 	}
 
 	private void verifyPhone(String phoneNumber) throws Exception {
